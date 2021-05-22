@@ -1,6 +1,8 @@
 class Blockhain:
     def __init__(self):
         self.chain = {}
+        self.transactionPool = {}
+        
     
-    def add_block(self, block) -> bool:
+    def addBlock(self, block) -> bool:
         

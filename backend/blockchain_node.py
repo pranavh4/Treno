@@ -7,9 +7,14 @@ from lib.wallet import Wallet
 keys = Wallet.generate_key()
 
 t = Transaction(keys['public_key'],"hegde",10)
-t.sign_transaction(keys['private_key'])
-t.validate_signature()
+t.signTransaction(keys['private_key'])
+t.validateSignature()
 str(t)
 
 t.amount = 20
-t.validate_signature()
+t.validateSignature()
+
+
+from lib.block import Block
+block = Block([t],t)
+str(block)

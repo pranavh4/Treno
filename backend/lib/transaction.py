@@ -14,24 +14,24 @@ class Transaction:
         self.timestamp = str(int(time.time()))
         self.signature = ""
 
-    def sign_transaction(self, private_key):
+    def signTransaction(self, private_key):
         private_key = RSA.importKey(binascii.unhexlify(private_key))
         signer = PKCS1_v1_5.new(private_key)
-        h = SHA.new(str(self.to_unsigned_str()).encode('utf8'))
+        h = SHA.new(str(self.toUnsignedStr()).encode('utf8'))
         self.signature = binascii.hexlify(signer.sign(h)).decode('ascii')
 
-    def validate_signature(self) -> bool:
+    def validateSignature(self) -> bool:
         public_key = RSA.importKey(binascii.unhexlify(self.sender))
         verifier = PKCS1_v1_5.new(public_key)
-        h = SHA.new(str(self.to_unsigned_str()).encode('utf8'))
+        h = SHA.new(str(self.toUnsignedStr()).encode('utf8'))
         return verifier.verify(h, binascii.unhexlify(self.signature))
 
-    def to_unsigned_str(self) -> str:
-        dict = self.to_dict()
+    def toUnsignedStr(self) -> str:
+        dict = self.toDict()
         del dict['signature']
         return json.dumps(dict)
 
-    def to_dict(self) -> OrderedDict:
+    def toDict(self) -> OrderedDict:
         return OrderedDict({
             "sender": self.sender,
             "receiver": self.receiver,
@@ -41,4 +41,4 @@ class Transaction:
         })
 
     def __str__(self) -> str:
-        return json.dumps(self.to_dict())
+        return json.dumps(self, default=lambda o: o.toDict())
