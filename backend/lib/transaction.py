@@ -1,43 +1,76 @@
 import binascii
+from hashlib import sha256
 from typing import OrderedDict
-import time
 import json
 from Crypto.PublicKey import RSA
 from Crypto.Signature import PKCS1_v1_5
 from Crypto.Hash import SHA
 
-class Transaction:
-    def __init__(self,sender,receiver,amount):
-        self.sender = sender
-        self.receiver = receiver
-        self.amount = amount
-        self.timestamp = str(int(time.time()))
-        self.signature = ""
-
-    def signTransaction(self, private_key):
-        private_key = RSA.importKey(binascii.unhexlify(private_key))
-        signer = PKCS1_v1_5.new(private_key)
-        h = SHA.new(str(self.toUnsignedStr()).encode('utf8'))
-        self.signature = binascii.hexlify(signer.sign(h)).decode('ascii')
-
-    def validateSignature(self) -> bool:
-        public_key = RSA.importKey(binascii.unhexlify(self.sender))
-        verifier = PKCS1_v1_5.new(public_key)
-        h = SHA.new(str(self.toUnsignedStr()).encode('utf8'))
-        return verifier.verify(h, binascii.unhexlify(self.signature))
-
-    def toUnsignedStr(self) -> str:
-        dict = self.toDict()
-        del dict['signature']
-        return json.dumps(dict)
+class TransactionInput:
+    def __init__(self, txId: str, outputIndex: int, signature: str):
+        self.txId = txId
+        self.outputIndex = outputIndex
+        self.signature = signature
 
     def toDict(self) -> OrderedDict:
         return OrderedDict({
-            "sender": self.sender,
-            "receiver": self.receiver,
-            "amount": self.amount,
-            "timestamp": self.timestamp,
+            "txId": self.txId,
+            "outputIndex": self.outputIndex,
             "signature": self.signature
+        })
+
+    def __eq__(self, o: object) -> bool:
+        if (isinstance(object, TransactionInput)):
+            if(self.txId == o.txId and self.outputIndex == self.outputIndex and self.signature == self.signature):
+                return True
+        return False
+
+    def __str__(self) -> str:
+        return json.dumps(self, default=lambda o: o.toDict())
+
+class TransactionOutput:
+    def __init__(self, amount: int, receiver: str):
+        self.amount = amount
+        self.receiver = receiver
+    
+    def toDict(self) -> OrderedDict:
+        return OrderedDict({
+            "amount":self.amount,
+            "receiver":self.receiver
+        })
+
+    def __str__(self) -> str:
+        return json.dumps(self, default=lambda o: o.toDict())
+
+class Transaction:
+    def __init__(self, txIn, txOut):
+        self.txIn = txIn
+        self.txOut = txOut
+
+    # def signTransaction(self, private_key):
+    #     private_key = RSA.importKey(binascii.unhexlify(private_key))
+    #     signer = PKCS1_v1_5.new(private_key)
+    #     h = SHA.new(str(self).encode('utf8'))
+    #     self.signature = binascii.hexlify(signer.sign(h)).decode('ascii')
+
+    # def validateSignature(self) -> bool:
+    #     public_key = RSA.importKey(binascii.unhexlify(self.sender))
+    #     verifier = PKCS1_v1_5.new(public_key)
+    #     h = SHA.new(str(self).encode('utf8'))
+    #     return verifier.verify(h, binascii.unhexlify(self.signature))
+
+    # def toUnsignedStr(self) -> str:
+    #     dict = self.toDict()
+    #     del dict['signature']
+    #     return json.dumps(dict)
+
+    def getHash(self) -> str:
+        return sha256(bytes(str(self),encoding='utf-8')).hexdigest()
+
+    def toDict(self) -> OrderedDict:
+        return OrderedDict({
+            "txIn": self.txIn,
+            "txOut": self.txOut
         })
 
     def __str__(self) -> str:

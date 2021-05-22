@@ -4,11 +4,13 @@ import time
 import json
 
 class Block:
-    def __init__(self, transactions, prevBlock):
+    def __init__(self, transactions, prevBlockHash):
         self.transactions = transactions
-        prevBlockStr = str(prevBlock)
-        self.prevBlockHash = sha256(bytes(prevBlockStr,encoding='utf-8')).hexdigest()
+        self.prevBlockHash = prevBlockHash
         self.timestamp = str(int(time.time()))
+
+    def getHash(self) -> str:
+        return sha256(bytes(str(self),encoding='utf-8')).hexdigest()
     
     def toDict(self) -> OrderedDict:
         return OrderedDict({

@@ -1,20 +1,32 @@
-import sys
-sys.path.append('./backend')
+from lib.transaction import TransactionInput,Transaction, TransactionOutput
+import requests
+from flask import Flask, jsonify, request, render_template
+from flask_cors import CORS
 
-from lib.transaction import Transaction
-from lib.wallet import Wallet
+from lib.blockchain import Blockchain
 
-keys = Wallet.generate_key()
+app = Flask(__name__)
+CORS(app)
 
-t = Transaction(keys['public_key'],"hegde",10)
-t.signTransaction(keys['private_key'])
-t.validateSignature()
-str(t)
+blockhain = Blockchain()
+blockhain.createGenesisBlock()
 
-t.amount = 20
-t.validateSignature()
+@app.route("/getUtxo", methods = ['POST'])
+def getUtxo():
+    sender = request.json["sender"]
+    return jsonify({"utxo": blockhain.utxoPool[sender]})
 
+@app.route("/transactions/add", methods = ['POST'])
+def addTransaction():
+    reqData = request.json
+    txIn, txOut = [],[]
+    for iTx in reqData["txIn"]:
+        txIn.append(TransactionInput(iTx["txId"],iTx["outputIndex"],iTx["signature"]))
+    for oTx in reqData["txOut"]:
+        txOut.append(TransactionOutput(oTx["amount"],oTx["receiver"]))
+    transaction = Transaction(txIn,txOut)
+    print(blockhain.verifyTransaction(transaction))
+    return jsonify({"status":"Success"})
 
-from lib.block import Block
-block = Block([t],t)
-str(block)
+if __name__ == "__main__":
+    app.run(host="127.0.0.1", port=5000)
