@@ -6,7 +6,6 @@ from Crypto.PublicKey import RSA
 from Crypto.PublicKey import RSA
 from Crypto.Signature import PKCS1_v1_5
 from Crypto.Hash import SHA
-import binascii
 
 from flask import json
 from .transaction import Transaction, TransactionInput, TransactionOutput
@@ -38,12 +37,6 @@ class Wallet:
                 utxo["outputIndex"],
                 signature
             ))
-            pitx = TransactionInput(
-                utxo["txId"],
-                utxo["outputIndex"],
-                signature
-            )
-            print(pitx)
             utxoAmt += utxo["amount"]
             if utxoAmt >= amount + transactionFee:
                 break

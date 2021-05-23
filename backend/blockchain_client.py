@@ -23,7 +23,7 @@ def generateTransaction():
         reqData["privateKey"]
     )
     print(transaction)
-    retData = requests.post('http://localhost:5000/transactions/add', json=transaction)
+    retData = requests.post('http://localhost:5000/transactions/add', json={"sender":reqData["sender"], "transaction": transaction})
     return retData.json()
 
 if __name__ == "__main__":

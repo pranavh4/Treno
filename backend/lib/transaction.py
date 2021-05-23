@@ -47,23 +47,6 @@ class Transaction:
         self.txIn = txIn
         self.txOut = txOut
 
-    # def signTransaction(self, private_key):
-    #     private_key = RSA.importKey(binascii.unhexlify(private_key))
-    #     signer = PKCS1_v1_5.new(private_key)
-    #     h = SHA.new(str(self).encode('utf8'))
-    #     self.signature = binascii.hexlify(signer.sign(h)).decode('ascii')
-
-    # def validateSignature(self) -> bool:
-    #     public_key = RSA.importKey(binascii.unhexlify(self.sender))
-    #     verifier = PKCS1_v1_5.new(public_key)
-    #     h = SHA.new(str(self).encode('utf8'))
-    #     return verifier.verify(h, binascii.unhexlify(self.signature))
-
-    # def toUnsignedStr(self) -> str:
-    #     dict = self.toDict()
-    #     del dict['signature']
-    #     return json.dumps(dict)
-
     def getHash(self) -> str:
         return sha256(bytes(str(self),encoding='utf-8')).hexdigest()
 
