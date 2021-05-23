@@ -1,0 +1,43 @@
+name: fyp
+channels:
+  - conda-forge
+  - anaconda
+  - defaults
+dependencies:
+  - brotlipy=0.7.0=py39h2bbff1b_1003
+  - ca-certificates=2020.10.14=0
+  - certifi=2020.12.5=py39hcbf5309_1
+  - cffi=1.14.5=py39hcd4344a_0
+  - chardet=3.0.4=py39haa95532_1003
+  - click=7.1.2=py_0
+  - cryptography=3.4.7=py39h71e12ea_0
+  - flask=1.1.2=py_0
+  - flask-cors=3.0.9=py_0
+  - idna=2.10=py_0
+  - itsdangerous=1.1.0=py_0
+  - jinja2=2.11.2=py_0
+  - markupsafe=2.0.1=py39h2bbff1b_0
+  - openssl=1.1.1k=h8ffe710_0
+  - pip=21.0.1=py39haa95532_0
+  - pycparser=2.20=py_2
+  - pycryptodome=3.10.1=py39hb82d6ee_0
+  - pyopenssl=19.1.0=py_1
+  - pysocks=1.7.1=py39haa95532_0
+  - python=3.9.4=h6244533_0
+  - python_abi=3.9=1_cp39
+  - requests=2.24.0=py_0
+  - setuptools=52.0.0=py39haa95532_0
+  - sqlite=3.35.4=h2bbff1b_0
+  - tzdata=2020f=h52ac0ba_0
+  - urllib3=1.25.11=py_0
+  - vc=14.2=h21ff451_1
+  - vs2015_runtime=14.27.29016=h5e58377_2
+  - werkzeug=1.0.1=py_0
+  - wheel=0.36.2=pyhd3eb1b0_0
+  - win_inet_pton=1.1.0=py39haa95532_0
+  - wincertstore=0.2=py39h2bbff1b_0
+  - pip:
+    - anytree==2.8.0
+    - future-fstrings==1.2.0
+    - six==1.16.0
+prefix: C:\Users\prana\anaconda3\envs\fyp
