@@ -1,3 +1,4 @@
+from lib.block import Block
 from lib.transaction import TransactionInput,Transaction, TransactionOutput
 import requests
 from flask import Flask, jsonify, request, render_template

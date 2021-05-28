@@ -9,6 +9,7 @@ from Crypto.Hash import SHA
 
 from flask import json
 from .transaction import Transaction, TransactionInput, TransactionOutput
+from .utils import generateSignature
 
 class Wallet:
     @staticmethod
@@ -31,7 +32,7 @@ class Wallet:
         utxoAmt = 0
         txIn = []
         for utxo in utxos:
-            signature = Wallet.signTransaction(utxo["txId"], privateKey)
+            signature = generateSignature(utxo["txId"], privateKey)
             txIn.append(TransactionInput(
                 utxo["txId"],
                 utxo["outputIndex"],
@@ -51,10 +52,3 @@ class Wallet:
 
         transaction = Transaction(txIn, txOut)
         return json.loads(str(transaction)) 
-    
-    @staticmethod
-    def signTransaction(txId, privateKey):
-        privateKey = RSA.importKey(binascii.unhexlify(privateKey))
-        signer = PKCS1_v1_5.new(privateKey)
-        h = SHA.new(txId.encode('utf8'))
-        return binascii.hexlify(signer.sign(h)).decode('ascii')

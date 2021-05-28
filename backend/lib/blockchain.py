@@ -29,8 +29,16 @@ class Blockchain:
             [TransactionInput("0",-1, "0")],
             [TransactionOutput(self.MAX_COINS, genesisKey["publicKey"])]
         )
-        print(transaction)
-        block = Block([transaction],"0")
+        # print(transaction)
+        block = Block(
+            [transaction],
+            "0",
+            genesisKey["publicKey"],
+            "0000000000000000000000000000000000000000000000000000000000000000",
+            153722867,
+            0
+            )
+        block.signBlock(genesisKey["privateKey"])
         blockHash = block.getHash()
 
         self.blocks = {blockHash: block}
@@ -146,7 +154,7 @@ class Blockchain:
                 return {"valid":False}
             outputTx = inputTx.txOut[input.outputIndex]
             signer = outputTx.receiver
-            if not validateSignature(inputTx, signer, input.signature):
+            if not validateSignature(inputTx.getHash(), signer, input.signature):
                 print("signature not valid")
                 return {"valid":False}
             if self.utxoSpent(signer, input.txId, input.outputIndex, outputTx.amount) and not txIndependentlyVerified:

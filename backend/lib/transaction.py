@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 import binascii
 from hashlib import sha256
-from typing import OrderedDict
+from typing import Dict, OrderedDict
 import json
 from Crypto.PublicKey import RSA
 from Crypto.Signature import PKCS1_v1_5
@@ -20,13 +22,17 @@ class TransactionInput:
         })
 
     def __eq__(self, o: object) -> bool:
-        if (isinstance(object, TransactionInput)):
+        if (isinstance(o, TransactionInput)):
             if(self.txId == o.txId and self.outputIndex == self.outputIndex and self.signature == self.signature):
                 return True
         return False
 
     def __str__(self) -> str:
         return json.dumps(self, default=lambda o: o.toDict())
+    
+    @classmethod
+    def fromDict(cls, dict: Dict) -> TransactionInput:
+        return cls(dict["txId"], dict["outputIndex"], dict["signature"])
 
 class TransactionOutput:
     def __init__(self, amount: int, receiver: str):
@@ -42,6 +48,11 @@ class TransactionOutput:
     def __str__(self) -> str:
         return json.dumps(self, default=lambda o: o.toDict())
 
+    @classmethod
+    def fromDict(cls, dict: Dict) -> TransactionOutput:
+        return cls(dict["amount"], dict["receiver"])
+
+
 class Transaction:
     def __init__(self, txIn, txOut):
         self.txIn = txIn
@@ -55,6 +66,12 @@ class Transaction:
             "txIn": self.txIn,
             "txOut": self.txOut
         })
+    
+    @classmethod
+    def fromDict(cls, dict: Dict) -> Transaction:
+        txIn = [TransactionInput.fromDict(t) for t in dict["txIn"]]
+        txOut = [TransactionOutput.fromDict(t) for t in dict["txOut"]]
+        return cls(txIn, txOut)
 
     def __str__(self) -> str:
         return json.dumps(self, default=lambda o: o.toDict())
