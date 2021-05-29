@@ -9,7 +9,7 @@ from Crypto.Hash import SHA
 import time
 
 class Task:
-    def __init__(self, fileURL: str, threshold: float, signature:str):
+    def __init__(self, resourceURL: str, threshold: float, signature:str):
         self.date = int(time.time())
         self.resourceURL = resourceURL
         self.threshold = round(threshold,2)
@@ -28,7 +28,7 @@ class Task:
         return sha256(bytes(str(self),encoding='utf-8')).hexdigest()
 
     def __eq__(self, o: object) -> bool:
-        if (isinstance(o, TransactionInput)):
+        if (isinstance(o, Task)):
             if(self.date == o.date and self.resourceURL == o.resourceURL and self.threshold == o.threshold and self.signature == o.signature):
                 return True
         return False
@@ -37,7 +37,7 @@ class Task:
         return json.dumps(self, default=lambda o: o.toDict())
     
     @classmethod
-    def fromDict(cls, dict: Dict) -> TransactionInput:
+    def fromDict(cls, dict: Dict) -> Task:
         return cls(dict["date"], dict["resourceURL"], dict["threshold"], dict["signature"])
 
 class TaskSolution:
@@ -58,7 +58,7 @@ class TaskSolution:
         })
 
     def __eq__(self, o: object) -> bool:
-        if (isinstance(o, TransactionInput)):
+        if (isinstance(o, TaskSolution)):
             if(self.date == o.date and self.taskHash == o.taskHash and self.modelURL == o.modelURL and self.accuracy == o.accuracy and self.signature == o.signature):
                 return True
         return False
@@ -67,5 +67,5 @@ class TaskSolution:
         return json.dumps(self, default=lambda o: o.toDict())
     
     @classmethod
-    def fromDict(cls, dict: Dict) -> TransactionInput:
+    def fromDict(cls, dict: Dict) -> TaskSolution:
         return cls(dict["date"], dict["taskHash"], dict["modelURL"], dict["accuracy"], dict["signature"])
