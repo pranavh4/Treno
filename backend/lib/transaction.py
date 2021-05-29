@@ -23,7 +23,7 @@ class TransactionInput:
 
     def __eq__(self, o: object) -> bool:
         if (isinstance(o, TransactionInput)):
-            if(self.txId == o.txId and self.outputIndex == self.outputIndex and self.signature == self.signature):
+            if(self.txId == o.txId and self.outputIndex == o.outputIndex and self.signature == o.signature):
                 return True
         return False
 
@@ -51,7 +51,6 @@ class TransactionOutput:
     @classmethod
     def fromDict(cls, dict: Dict) -> TransactionOutput:
         return cls(dict["amount"], dict["receiver"])
-
 
 class Transaction:
     def __init__(self, txIn, txOut):
