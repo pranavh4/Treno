@@ -53,7 +53,7 @@ class TransactionOutput:
         return cls(dict["amount"], dict["receiver"])
 
 class Transaction:
-    def __init__(self, txIn, txOut):
+    def __init__(self, txIn: list[TransactionInput], txOut: list[TransactionOutput]):
         self.txIn = txIn
         self.txOut = txOut
         self.type = "currency"
@@ -67,6 +67,13 @@ class Transaction:
             "txIn": self.txIn,
             "txOut": self.txOut
         })
+
+    def getUnsignedStr(self) -> str:
+        dict = json.loads(str(self))
+        print(dict)
+        for i in range(len(dict["txIn"])):
+            dict["txIn"][i]["signature"] = ""
+        return json.dumps(dict, default=lambda o: o.toDict())
     
     @classmethod
     def fromDict(cls, dict: Dict) -> Transaction:

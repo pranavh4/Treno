@@ -167,7 +167,7 @@ class Blockchain:
                 return {"valid":False}
             outputTx = inputTx.txOut[input.outputIndex]
             signer = outputTx.receiver
-            if not validateSignature(inputTx.getHash(), signer, input.signature):
+            if not validateSignature(transaction.getUnsignedStr() + input.txId + str(input.outputIndex), signer, input.signature):
                 print("signature not valid")
                 return {"valid":False}
             if self.utxoSpent(signer, input.txId, input.outputIndex, outputTx.amount) and not txIndependentlyVerified:

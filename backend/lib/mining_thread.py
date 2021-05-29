@@ -36,8 +36,9 @@ class MiningThread(threading.Thread):
                     lastBlock = prevBlock
 
         self.setLastBlock(lastBlock)
+        print(generationLimit - self.hitTime)
         print(str(self.hitTime - lastBlock.timestamp) + " " + str(time.time() - lastBlock.timestamp))
-        print("hit vs genLim: " + str(self.hitTime) + " " + str(generationLimit))
+        # print("hit vs genLim: " + str(self.hitTime) + " " + str(generationLimit))
         if self.hitTime == generationLimit:
             print("added block")
             block = self.createBlock()
@@ -68,6 +69,8 @@ class MiningThread(threading.Thread):
         txIds = self.blockchain.transactionPool.keys()
         prevBlock = self.blockchain.blocks[self.blockchain.mainChain[-1]]
         prevBlockHash = prevBlock.getHash()
+        height = self.blockchain.mainChain.index(prevBlockHash) + 1
+        index = height - 3 if height - 3 > 0 else 0
         block = Block(
             [],
             prevBlockHash,
@@ -77,12 +80,12 @@ class MiningThread(threading.Thread):
             0,
             self.hitTime
             )
-        blocks = [block]
-        while len(blocks)!=4:
-            if blocks[0].prevBlockHash == "0":
-                break
-            b = self.blockchain.blocks[blocks[0].prevBlockHash]
-            blocks = [b] + blocks
+        blocks = [self.blockchain.blocks[b] for b in self.blockchain.mainChain[index:height]] + [block]
+        # while len(blocks)!=4:
+        #     if blocks[0].prevBlockHash == "0":
+        #         break
+        #     b = self.blockchain.blocks[blocks[0].prevBlockHash]
+        #     blocks = [b] + blocks
         baseTarget = self.getNextBaseTarget(blocks)
         block.baseTarget = baseTarget
         block.cumulativeDifficulty = self.getNextCumulativeDifficulty(prevBlock.cumulativeDifficulty, baseTarget)

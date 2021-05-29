@@ -32,11 +32,10 @@ class Wallet:
         utxoAmt = 0
         txIn = []
         for utxo in utxos:
-            signature = generateSignature(utxo["txId"], privateKey)
             txIn.append(TransactionInput(
                 utxo["txId"],
                 utxo["outputIndex"],
-                signature
+                ""
             ))
             utxoAmt += utxo["amount"]
             if utxoAmt >= amount + transactionFee:
@@ -51,4 +50,9 @@ class Wallet:
         ]
 
         transaction = Transaction(txIn, txOut)
+        for i in range(len(transaction.txIn)):
+            print("hash inp: " + transaction.getUnsignedStr() + transaction.txIn[i].txId)
+            sigInput = transaction.getUnsignedStr() + transaction.txIn[i].txId + str(transaction.txIn[i].outputIndex)
+            transaction.txIn[i].signature = generateSignature(sigInput, privateKey)
+
         return json.loads(str(transaction)) 
