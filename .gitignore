@@ -1,2 +1,5 @@
 .vscode
 *.pyc
+*.pdf
+scratch.py
+backend/lib/dbHelper.py
