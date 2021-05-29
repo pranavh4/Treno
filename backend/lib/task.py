@@ -9,7 +9,7 @@ from Crypto.Hash import SHA
 import time
 
 class Task:
-    def __init__(self, fileURL: str, threshold: float, signature:str):
+    def __init__(self, resourceURL: str, threshold: float, signature:str):
         self.date = int(time.time())
         self.resourceURL = resourceURL
         self.threshold = round(threshold,2)
