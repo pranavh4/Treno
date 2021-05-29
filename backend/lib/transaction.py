@@ -57,12 +57,14 @@ class Transaction:
     def __init__(self, txIn, txOut):
         self.txIn = txIn
         self.txOut = txOut
+        self.type = "currency"
 
     def getHash(self) -> str:
         return sha256(bytes(str(self),encoding='utf-8')).hexdigest()
 
     def toDict(self) -> OrderedDict:
         return OrderedDict({
+            "type": self.type,
             "txIn": self.txIn,
             "txOut": self.txOut
         })

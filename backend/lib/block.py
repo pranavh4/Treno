@@ -8,10 +8,10 @@ import time
 import json
 
 class Block:
-    def __init__(self, transactions: list, prevBlockHash: str, generatorPubKey: str, generationSignature: str, baseTarget: int, cumulativeDifficulty: int):
+    def __init__(self, transactions: list, prevBlockHash: str, generatorPubKey: str, generationSignature: str, baseTarget: int, cumulativeDifficulty: int, timestamp: int = int(time.time())):
         self.transactions = transactions
         self.prevBlockHash = prevBlockHash
-        self.timestamp = str(int(time.time()))
+        self.timestamp = timestamp
         self.baseTarget = baseTarget
         self.generationSignature = generationSignature
         self.cumulativeDifficulty = cumulativeDifficulty

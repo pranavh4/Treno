@@ -1,16 +1,18 @@
+import json
 from lib.block import Block
 from lib.transaction import TransactionInput,Transaction, TransactionOutput
 import requests
 from flask import Flask, jsonify, request, render_template
 from flask_cors import CORS
+from argparse import ArgumentParser
 
 from lib.blockchain import Blockchain
+from lib.mining_thread import MiningThread
 
 app = Flask(__name__)
 CORS(app)
 
-blockchain = Blockchain()
-blockchain.createGenesisBlock()
+
 
 @app.route("/getUtxo", methods = ['POST'])
 def getUtxo():
@@ -51,4 +53,19 @@ def test():
     return jsonify({"status":"success"})
 
 if __name__ == "__main__":
+    parser = ArgumentParser()
+    parser.add_argument("keyFilePath", help="Path of json file which stores your public and private keys")
+    args = parser.parse_args()
+
+    blockchain = Blockchain()
+    blockchain.createGenesisBlock()
+
+    with open(args.keyFilePath) as f:
+        keys = json.load(f)
+    
+    print(keys)
+    miningThread = MiningThread(blockchain, keys["publicKey"], keys["privateKey"])
+    miningThread.setDaemon(True)
+    miningThread.start()
     app.run(host="127.0.0.1", port=5000)
+

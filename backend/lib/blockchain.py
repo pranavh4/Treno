@@ -5,6 +5,7 @@ from hashlib import sha256
 from pathlib import Path
 from .transaction import Transaction, TransactionInput, TransactionOutput
 from .utils import validateSignature
+from .block_verification_utils import *
 import json
 
 
@@ -12,6 +13,7 @@ class Blockchain:
     MAX_COINS = 5000000
     MIN_TRANSACTION_FEE = 1
     MAX_TRANSACTION_IN_BLOCK = 49
+    WST_AGE_LIMIT = 10000
 
     def __init__(self):
         self.mainChain = []
@@ -48,29 +50,7 @@ class Blockchain:
             "outputIndex": 0,
             "amount": self.MAX_COINS
         }]
-    
-    def createBlock(self, miner):
-        txIds = self.transactionPool.keys()
-        prevBlockHash = self.blocks[self.mainChain[-1]].getHash()
-        if len(txIds) == 0:
-            return Block([],prevBlockHash)
-
-        sortedTransactions = sorted(
-            [self.transactionPool[txId] for txId in txIds],
-            key = lambda t:t["transactionFee"], 
-            reverse=True
-        )
-        blockTransactions = [t["transaction"] for t in sortedTransactions[:self.MAX_TRANSACTION_IN_BLOCK]]
-
-        minerReward = sum([t["transactionFee"] for t in sortedTransactions[:self.MAX_TRANSACTION_IN_BLOCK]])
-        coinbaseTransaction = Transaction(
-            [TransactionInput("0",-1,"Coinbase Transaction")],
-            [TransactionOutput(minerReward, miner)]
-        )
-        blockTransactions = [coinbaseTransaction] + blockTransactions
-        block = Block(blockTransactions,prevBlockHash)
-        return block        
-
+           
     def addBlock(self, block: Block) -> bool:
         valid = self.verifyBlock(block)
         if not valid:
@@ -93,6 +73,31 @@ class Blockchain:
         return True
 
     def verifyBlock(self, block: Block) -> bool:
+        minerKey = block.generatorPubKey
+        effectiveBalance = self.getWSTBalance(self.mainChain.index(block.prevBlockHash), minerKey)
+        prevBlock = self.blocks[block.prevBlockHash]
+        hitTime = block.timestamp - prevBlock.timestamp
+        blocks = [block]
+        while len(blocks)!=4:
+            if blocks[0].prevBlockHash == "0":
+                break
+            b = self.blocks[blocks[0].prevBlockHash]
+            blocks = [b] + blocks
+        if not verifyHit(hitTime, effectiveBalance, prevBlock, block.timestamp):
+            print("Hit time Invalid")
+            return False
+        if not validateSignature(block.getUnsignedStr(), block.generatorPubKey, block.signature):
+            print("signature invalid")
+            return False
+        if not verifyBaseTarget(blocks):
+            print("base target invalid")
+            return False
+        if not verifyCumulativeDifficulty(block, prevBlock):
+            print("cumulative difficulty invalid")
+            return False
+        if not verifyGenerationSignature(block, prevBlock):
+            print("generation signature invalid")
+            return False
         if len(block.transactions)==0:
             return True
         if not self.verifyCoinbase(block):
@@ -100,11 +105,19 @@ class Blockchain:
             return False
 
         for tx in block.transactions[1:]:
-            independentlyVerified = tx.getHash() in self.transactionPool.keys()
-            if not self.verifyTransaction(tx, independentlyVerified):
+            if tx.getHash() not in self.transactionPool.keys():
+                sender = self.findByTxid(tx.txIn[0].txId).txOut[tx.txIn[0].outputIndex].receiver
+                self.addTransaction(tx, sender)
+            if not self.verifyTransaction(tx, True):
                 print("transaction invalid")
                 return False
         return True
+
+    def popLastBlock(self):
+        block = self.blocks[self.mainChain[-1]]
+        for tx in block.transactions:
+            self.transactionPool[tx.getHash()] = tx
+        self.mainChain.pop() 
 
     def addTransaction(self, transaction: Transaction, sender: str) -> bool:
         valid = self.verifyTransaction(transaction)
@@ -247,3 +260,17 @@ class Blockchain:
             self.utxoPool[receiver] = [utxo]
         else:
             self.utxoPool[receiver].append(utxo)
+
+    def getWSTBalance(self, height: int, pubKey: str) -> int:
+        return 1
+        startIndex = height - self.WST_AGE_LIMIT
+        startIndex = startIndex if startIndex > 0 else 0
+        blockIds = self.mainChain[startIndex : height + 1]
+        wstBalance = 0
+        for bId in blockIds:
+            block = self.blocks[bId]
+            for tx in block.transactions:
+                if tx.type == 'WST':
+                    if tx.receiver == pubKey:
+                        wstBalance += tx.amount
+        return wstBalance
