@@ -41,7 +41,7 @@ class TaskService:
         return file
 
     @staticmethod
-    def mine():
+    def mine(task: Task):
         try:
             #read data
             train = pd.read_csv('../../currentTask/data/train.csv',  header=None)   
@@ -92,6 +92,12 @@ class TaskService:
             )
             print("Completed Mining..", history.history)
 
+            # return TaskSolution(
+            #     task,
+            #     modelURL,
+            #     history.val_accuracy
+            #     signature
+            # )
         except Exception as e:
             print("Error occured while mining..\n", e)
   
