@@ -10,7 +10,6 @@ import time
 
 class Task:
     def __init__(self, resourceURL: str, threshold: float, maxEpochs: int, publicKey: str, signature:str):
-        self.timestamp = int(time.time())
         self.resourceURL = resourceURL
         self.threshold = round(threshold,2)
         self.maxEpochs = maxEpochs
@@ -20,7 +19,6 @@ class Task:
 
     def toDict(self) -> OrderedDict:
         return OrderedDict({
-            "timestamp": self.timestamp,
             "resourceURL": self.resourceURL,
             "threshold": self.threshold,
             "maxEpochs": self.maxEpochs,
@@ -33,30 +31,33 @@ class Task:
 
     def __eq__(self, o: object) -> bool:
         if (isinstance(o, Task)):
-            if(self.timestamp == o.timestamp and self.resourceURL == o.resourceURL and self.threshold == o.threshold and self.maxEpochs == o.maxEpochs and self.publicKey == o.publicKey and self.signature == o.signature):
+            if(self.resourceURL == o.resourceURL and self.threshold == o.threshold and self.maxEpochs == o.maxEpochs and self.publicKey == o.publicKey and self.signature == o.signature):
                 return True
         return False
 
     def __str__(self) -> str:
         return json.dumps(self, default=lambda o: o.toDict())
-    
+        
+    def getUnsignedStr(self) -> str:
+        dict = json.loads(str(self))
+        dict["signature"] = ""
+        return json.dumps(dict, default=lambda o: o.toDict())
+
     @classmethod
     def fromDict(cls, dict: Dict) -> Task:
-        return cls(dict["timestamp"], dict["resourceURL"], dict["threshold"], dict["maxEpochs"], dict["publicKey"], dict["signature"])
+        return cls(dict["resourceURL"], dict["threshold"], dict["maxEpochs"], dict["publicKey"], dict["signature"])
 
 class TaskSolution:
-    def __init__(self, task: Task, modelURL: str, accuracy: float, publicKey: str, signature:str):
-        self.timestamp = int(time.time())
+    def __init__(self, task: Task, modelURL: str, accuracy: float, wst: int, publicKey: str, signature:str):
         self.taskId = task.getHash()
         self.modelURL = modelURL
         self.accuracy = round(accuracy,2)
-        self.wst = 0
+        self.wst = wst
         self.publicKey = publicKey
         self.signature = signature
 
     def toDict(self) -> OrderedDict:
         return OrderedDict({
-            "timestamp": self.timestamp,
             "taskId": self.taskId,
             "modelURL": self.modelURL,
             "accuracy": self.accuracy,
@@ -67,7 +68,7 @@ class TaskSolution:
 
     def __eq__(self, o: object) -> bool:
         if (isinstance(o, TaskSolution)):
-            if(self.timestamp == o.timestamp and self.taskId == o.taskId and self.modelURL == o.modelURL and self.accuracy == o.accuracy and self.wst == o.wst and self.publicKey == o.publicKey and self.signature == o.signature):
+            if(self.taskId == o.taskId and self.modelURL == o.modelURL and self.accuracy == o.accuracy and self.wst == o.wst and self.publicKey == o.publicKey and self.signature == o.signature):
                 return True
         return False
 
@@ -76,10 +77,10 @@ class TaskSolution:
     
     def getUnsignedStr(self) -> str:
         dict = json.loads(str(self))
-        print(dict)
+        dict["signature"] = ""
         return json.dumps(dict, default=lambda o: o.toDict())
 
     @classmethod
     def fromDict(cls, dict: Dict) -> TaskSolution:
-        return cls(dict["timestamp"], dict["taskId"], dict["modelURL"], dict["accuracy"], dict["wst"], dict["publicKey"], dict["signature"])
+        return cls(dict["taskId"], dict["modelURL"], dict["accuracy"], dict["wst"], dict["publicKey"], dict["signature"])
         

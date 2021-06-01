@@ -3,3 +3,7 @@
 *.pdf
 scratch.py
 backend/lib/dbHelper.py
+solutions/*
+taskSolution/*
+downloads/*
+currentTask/*
