@@ -14,5 +14,5 @@ def verifyGenerationSignature(block: Block, prevBlock: Block) -> bool:
 def verifyCumulativeDifficulty(block: Block, prevBlock: Block) -> bool:
     return MiningThread.getNextCumulativeDifficulty(prevBlock.cumulativeDifficulty, block.baseTarget) == block.cumulativeDifficulty
 
-def verifyBaseTarget(blocks: list[Block]) -> bool:
-    return MiningThread.getNextBaseTarget(blocks) == blocks[-1].baseTarget
+def verifyBaseTarget(blocks: list[Block], newBlock: Block) -> bool:
+    return MiningThread.getNextBaseTarget(blocks) == newBlock.baseTarget

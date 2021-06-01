@@ -12,15 +12,19 @@ import json
 class Blockchain:
     MAX_COINS = 5000000
     MIN_TRANSACTION_FEE = 1
-    MAX_TRANSACTION_IN_BLOCK = 49
+    MAX_CURRENCY_TRANSACTION_IN_BLOCK = 49
+    MAX_WST_IN_BLOCK = 50
+    MAX_TASK_REQUESTS_IN_BLOCK = 50
     WST_AGE_LIMIT = 10000
 
     def __init__(self):
         self.mainChain = []
-        self.secondaryChain = []
+        self.forks = []
         self.blocks = {}
         self.transactionPool = {}
         self.utxoPool = {}
+        self.taskPool = {}
+        self.wstPool = {}
 
     def createGenesisBlock(self):
         genesisKeyPath = Path(__file__).parent / "resources/genesisKey.json"
@@ -77,7 +81,7 @@ class Blockchain:
         effectiveBalance = self.getWSTBalance(self.mainChain.index(block.prevBlockHash), minerKey)
         prevBlock = self.blocks[block.prevBlockHash]
         hitTime = block.timestamp - prevBlock.timestamp
-        blocks = [block]
+        blocks = [self.blocks[block.prevBlockHash]]
         while len(blocks)!=4:
             if blocks[0].prevBlockHash == "0":
                 break
@@ -89,7 +93,7 @@ class Blockchain:
         if not validateSignature(block.getUnsignedStr(), block.generatorPubKey, block.signature):
             print("signature invalid")
             return False
-        if not verifyBaseTarget(blocks):
+        if not verifyBaseTarget(blocks, block):
             print("base target invalid")
             return False
         if not verifyCumulativeDifficulty(block, prevBlock):

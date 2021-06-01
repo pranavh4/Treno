@@ -87,11 +87,11 @@ class TaskService:
         Path(TaskService.taskSolutionFolder).mkdir(parents=True, exist_ok=True)
         fileLoc = TaskService.taskSolutionFolder+"/{id}.h5".format(id=taskSolution.taskId)
         if Path(fileLoc).exists():
-            print("Task Already Downloaded ...")
-        else:
-            print("Downloading TaskSolution ...")
-            file = wget.download(taskSolution.modelURL, out=fileLoc)
-            print("Download completed ...")
+            Path(fileLoc).unlink()
+        # else:
+        print("Downloading TaskSolution ...")
+        file = wget.download(taskSolution.modelURL, out=fileLoc)
+        print("Download completed ...")
 
     @staticmethod
     def runTask(task: Task, publicKey: str, privateKey: str) -> TaskSolution:
