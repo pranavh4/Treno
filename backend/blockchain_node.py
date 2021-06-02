@@ -1,3 +1,4 @@
+from lib.p2p import P2P
 import json
 from lib.block import Block
 from lib.transaction import TransactionInput,Transaction, TransactionOutput
@@ -12,7 +13,8 @@ from lib.mining_thread import MiningThread
 app = Flask(__name__)
 CORS(app)
 
-
+seedNodeUrl = "http://127.0.0.1:8001"
+blockRequestLimit = 2
 
 @app.route("/getUtxo", methods = ['POST'])
 def getUtxo():
@@ -44,6 +46,53 @@ def addBlock():
     status = blockchain.addBlock(block)
     return jsonify({"status":status})
 
+@app.route("/registerNode")
+def registerNode():
+    return P2P.registerNode(port)
+
+@app.route("/deleteNode")
+def deleteNode():
+    return P2P.deleteNode(port)
+
+@app.route("/pauseMining")
+def pauseMining():
+    miningThread.pauseMining()
+    return jsonify({"isMining":miningThread.isMining})
+
+@app.route("/continueMining")
+def continueMining():
+    miningThread.continueMining()
+    return jsonify({"isMining":miningThread.isMining})
+
+@app.route("/fetchBlockHeight")
+def fetchBlockHeight():
+    response = {}
+    response["blockHeight"] = len(blockchain.mainChain)
+    return response
+
+@app.route("/fetchBlocks",methods = ['POST'])
+def fetchBlocks():
+    requestData = request.json
+    limit = requestData["limit"]
+    blockHash = requestData["blockHash"]
+    response = {}
+    response["blocks"] = P2P.fetchBlocks(blockchain,blockHash,limit)
+    return response
+
+
+@app.route("/getBlockChain")
+def getBlockChain():
+    displayLength = 4
+    blocks=[]
+    for ind in range(len(blockchain.mainChain)):
+        blocks.append(blockchain.mainChain[ind][:displayLength])
+    blockChainHeight = len(blockchain.mainChain)
+    resp = {}
+    resp["blocks"]=blocks
+    resp["blockChainHeight"]=blockChainHeight
+
+    return jsonify(resp)
+
 @app.route("/test")
 def test():
     # print(blockchain.mainChain)
@@ -52,9 +101,48 @@ def test():
     print(blockchain.utxoPool)
     return jsonify({"status":"success"})
 
+@app.route("/printStatusLocal")
+def testNew():
+    displayLength=4
+    print(f"BlockChain Height: {len(blockchain.mainChain)}")
+    print("*"*20)
+    for ind in range(len(blockchain.mainChain)):
+        currentBlock = blockchain.blocks[blockchain.mainChain[ind]]
+        print(f"Block Index: {ind}")
+        print(f"Block Hash: {str(blockchain.mainChain[ind])[:displayLength]}")
+        print(f"Previous Block Hash: {str(currentBlock.prevBlockHash)[:displayLength]}")
+        if ind>0:
+            timeDiff = currentBlock.timestamp - blockchain.blocks[blockchain.mainChain[ind-1]].timestamp
+            print(f"Timestamp: {currentBlock.timestamp} (+{timeDiff})")
+        else:
+            print(f"Timestamp: {currentBlock.timestamp}")
+        
+        print(f"Base Target: {currentBlock.baseTarget}")
+        print(f"Generation Signature: {currentBlock.generationSignature[:displayLength]}")
+        print(f"Cumulative Difficulty: {currentBlock.cumulativeDifficulty}")
+        print(f"Generator Public Key: {currentBlock.generatorPubKey[:displayLength]}")
+        print(f"Signature: {currentBlock.signature[:displayLength]}")
+        if currentBlock.transactions==[]:
+            print("Transactions: Empty")
+        else:
+            print("Transactions:")
+        for transaction in currentBlock.transactions:
+            print(f"->Type: {transaction.type}")
+            print(f"->TxIn:")
+            for txin in transaction.txIn:
+                print(f"---> txID: {txin.txId[:displayLength]}  outputIndex: {txin.outputIndex}  Signature: {txin.signature[:displayLength]}")
+            print(f"->TxOut:")
+            for txout in transaction.txOut:
+                print(f"---> Amount: {txout.amount}  Receiver: {txout.receiver[:displayLength]}")
+        print("*"*20)
+    return jsonify({"status":"success"})
+
+
+
 if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument("keyFilePath", help="Path of json file which stores your public and private keys")
+    parser.add_argument("port", help="Port to start server on")
     args = parser.parse_args()
 
     blockchain = Blockchain()
@@ -64,8 +152,16 @@ if __name__ == "__main__":
         keys = json.load(f)
     
     print(keys)
+
+    nodes = []
+    nodes = requests.get(f"{seedNodeUrl}/getNodes").json()["activeNodes"]
+    if nodes!=[]:
+        P2P.syncNode(blockchain,blockRequestLimit,nodes)
+    
     miningThread = MiningThread(blockchain, keys["publicKey"], keys["privateKey"])
     miningThread.setDaemon(True)
     miningThread.start()
-    app.run(host="127.0.0.1", port=5000)
+    
+    port = args.port
 
+    app.run(host="127.0.0.1", port=port)

@@ -20,13 +20,24 @@ class MiningThread(threading.Thread):
         self.publicKey = publicKey
         self.privateKey = privateKey
         self.hitTime = None
+        self.isMining = True
         self.lastBlockId = None
         self.hitValue = None
         self.nextBaseTarget = None
         self.effectiveBalance = blockchain.getWSTBalance(len(blockchain.mainChain), publicKey)
         
+    def pauseMining(self):
+        print("Mining Paused")
+        self.isMining = False
+    
+    def continueMining(self):
+        print("Mining Continued")
+        self.isMining = True
+        threading.Timer(1,self.run).start()
 
     def run(self):
+        if self.isMining==False:
+            return
         threading.Timer(1, self.run).start()
         lastBlock = self.blockchain.blocks[self.blockchain.mainChain[-1]]
         # generationLimit = int(math.floor(time.time() - self.FORGING_DELAY))
