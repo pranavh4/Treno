@@ -3,6 +3,8 @@ import json
 import random
 from flask import jsonify
 import math
+
+from werkzeug import exceptions
 from lib.block import Block
 class P2P:
 
@@ -36,13 +38,21 @@ class P2P:
     
     @staticmethod
     def getGenesisNodeTimestamp():
-        response = requests.get(f"{P2P.seed_url}/getGenesisNodeTimestamp").json()
+        try:
+            response = requests.get(f"{P2P.seed_url}/getGenesisNodeTimestamp").json()
+        except (requests.exceptions.ConnectionError):
+            print("Please run python seed_node.py first")
+            exit(1)
         return response["genesisNodeTimestamp"]
     
     @staticmethod
     def setGenesisNodeTimestamp(timestamp):
         print(f"Sending Genesis Node timestamp to Seed Node {timestamp}")
-        response = requests.post(url=f"{P2P.seed_url}/setGenesisNodeTimestamp",json={"genesisNodeTimestamp":timestamp}).json()
+        try:
+            response = requests.post(url=f"{P2P.seed_url}/setGenesisNodeTimestamp",json={"genesisNodeTimestamp":timestamp}).json()
+        except (requests.exceptions.ConnectionError):
+            print("Please run python seed_node.py first")
+            exit(1)
         if response["status"]=="Success":
             print("Set genesis node timestamp successfully")
             return 1

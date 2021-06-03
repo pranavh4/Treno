@@ -154,7 +154,7 @@ if __name__ == "__main__":
     if seedTimestamp == -1:
         currTimestamp = int(time.time())
         GENESIS_NODE_TIMESTAMP = currTimestamp
-        P2P.setGenesisNodeTimestamp(currTimestamp)     
+        P2P.setGenesisNodeTimestamp(currTimestamp)    
     else:
         GENESIS_NODE_TIMESTAMP = seedTimestamp
     
