@@ -1,3 +1,5 @@
+from lib.taskService import TaskService
+from lib.task import Task
 from lib.p2p import P2P
 import json
 from lib.block import Block
@@ -9,6 +11,7 @@ from argparse import ArgumentParser
 
 from lib.blockchain import Blockchain
 from lib.mining_thread import MiningThread
+from lib.taskThread import TaskThread
 
 app = Flask(__name__)
 CORS(app)
@@ -39,6 +42,12 @@ def addTransaction():
         retData = {"status": "Failure"}
 
     return jsonify(retData)
+
+@app.route("/tasks/add", methods = ['POST'])
+def addTask():
+    reqData = request.json
+    task = Task.fromDict(reqData)
+    return {"status": blockchain.addTask(task)}
 
 @app.route("/block/add")
 def addBlock():
@@ -127,13 +136,16 @@ def testNew():
         else:
             print("Transactions:")
         for transaction in currentBlock.transactions:
-            print(f"->Type: {transaction.type}")
-            print(f"->TxIn:")
-            for txin in transaction.txIn:
-                print(f"---> txID: {txin.txId[:displayLength]}  outputIndex: {txin.outputIndex}  Signature: {txin.signature[:displayLength]}")
-            print(f"->TxOut:")
-            for txout in transaction.txOut:
-                print(f"---> Amount: {txout.amount}  Receiver: {txout.receiver[:displayLength]}")
+            if transaction.type == "currency":
+                print(f"->Type: {transaction.type}")
+                print(f"->TxIn:")
+                for txin in transaction.txIn:
+                    print(f"---> txID: {txin.txId[:displayLength]}  outputIndex: {txin.outputIndex}  Signature: {txin.signature[:displayLength]}")
+                print(f"->TxOut:")
+                for txout in transaction.txOut:
+                    print(f"---> Amount: {txout.amount}  Receiver: {txout.receiver[:displayLength]}")
+            else:
+                print(transaction)
         print("*"*20)
     return jsonify({"status":"success"})
 
@@ -152,7 +164,7 @@ if __name__ == "__main__":
         keys = json.load(f)
     
     print(keys)
-
+    port = args.port
     nodes = []
     nodes = requests.get(f"{seedNodeUrl}/getNodes").json()["activeNodes"]
     if nodes!=[]:
@@ -161,7 +173,12 @@ if __name__ == "__main__":
     miningThread = MiningThread(blockchain, keys["publicKey"], keys["privateKey"])
     miningThread.setDaemon(True)
     miningThread.start()
+
+    TaskService.setFilePaths(port)
+    # taskThread = TaskThread(blockchain, keys["publicKey"], keys["privateKey"])
+    # taskThread.setDaemon(True)
+    # taskThread.start()
+
     
-    port = args.port
 
     app.run(host="127.0.0.1", port=port)

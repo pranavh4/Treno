@@ -94,6 +94,8 @@ class MiningThread(threading.Thread):
         prevBlock = self.blockchain.blocks[self.blockchain.mainChain[-1]]
         prevBlockHash = prevBlock.getHash()
         blockTransactions = []
+        print("TASKs")
+        print(self.blockchain.taskPool)
         # height = self.blockchain.mainChain.index(prevBlockHash) + 1
         # index = height - 4 if height - 4 > 0 else 0
         block = Block(
@@ -114,9 +116,9 @@ class MiningThread(threading.Thread):
         # baseTarget = self.getNextBaseTarget(blocks)
         # block.baseTarget = self.baseTarget
         # block.cumulativeDifficulty = self.getNextCumulativeDifficulty(prevBlock.cumulativeDifficulty, baseTarget)
-        if len(txIds) == 0:
-            block.signBlock(self.privateKey)
-            return block
+        # if len(txIds) == 0:
+        #     block.signBlock(self.privateKey)
+        #     return block
 
         if len(txIds) != 0:
             sortedTransactions = sorted(

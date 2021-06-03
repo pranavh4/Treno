@@ -5,6 +5,7 @@ from threading import Thread
 import random
 class TaskThread(Thread):
     def __init__(self, blockchain: Blockchain, publicKey: str, privateKey: str):
+        super().__init__()
         self.blockchain = blockchain
         self.publicKey = publicKey
         self.privateKey = privateKey
@@ -13,8 +14,11 @@ class TaskThread(Thread):
         while True:
             random.seed(self.publicKey + str(int(time.time())), version=2)
             tasks = [self.blockchain.untrainedTasks[tId] for tId in self.blockchain.untrainedTasks.keys()]
-            index = random.randrange(0, len(tasks))
-            task = tasks[index]
-            TaskService.downloadTask(task)
-            taskSol = TaskService.runTask(task)
-            self.blockchain.addTaskSolution(taskSol)
+            if tasks:
+                index = random.randrange(0, len(tasks))
+                task = tasks[index]
+                TaskService.downloadTask(task)
+                taskSol = TaskService.runTask(task, self.publicKey, self.privateKey)
+                self.blockchain.addTaskSolution(taskSol)
+            else:
+                time.sleep(1)

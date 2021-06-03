@@ -1,3 +1,5 @@
+from lib.utils import generateSignature
+from lib.task import Task
 import requests
 from flask import Flask, jsonify, request, render_template
 from flask_cors import CORS
@@ -26,5 +28,19 @@ def generateTransaction():
     retData = requests.post('http://localhost:5000/transactions/add', json={"sender":reqData["sender"], "transaction": transaction})
     return retData.json()
 
+@app.route('/generate/task', methods = ['POST'])
+def generateTask():
+    reqData = request.json
+    task = Task(
+        reqData["resourceUrl"],
+        reqData["threshold"],
+        reqData["maxEpochs"],
+        reqData["publicKey"],
+        ""
+    )
+    task.signature = generateSignature(task.getUnsignedStr(), reqData["privateKey"])
+    print(task)
+    return requests.post('http://localhost:5000/tasks/add', json=json.loads(str(task))).json()
+
 if __name__ == "__main__":
-    app.run(host='127.0.0.1', port=8000)
+    app.run(host='127.0.0.1', port=8000, debug=True)

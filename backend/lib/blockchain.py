@@ -76,12 +76,12 @@ class Blockchain:
                     coinbaseTx.txOut[0].receiver
                 )
 
-            for tx in block.transactions[1:]:
-                if tx.type == "currency":
+            for tx in block.transactions:
+                if tx.type == "currency" and tx.txIn[0].outputIndex!= -1:
                     del self.transactionPool[tx.getHash()]
                 elif tx.type == "task":
                     del self.taskPool[tx.getHash()]
-                else:
+                elif tx.type == "taskSolution":
                     del self.wstPool[tx.getHash()]
         return True
 
@@ -185,10 +185,15 @@ class Blockchain:
         return True
 
     def addTask(self, task: Task) -> bool:
+        txId = self.findByTxid(task.getHash())
+        if txId is not None:
+            return False
         valid = TaskService.validateTask(task)
         if not valid:
             return False
         self.taskPool[task.getHash()] = task
+        self.untrainedTasks[task.getHash()] = task
+        print(self.taskPool)
         return True
 
     def addTaskSolution(self, taskSolution: TaskSolution) -> bool:
@@ -198,8 +203,21 @@ class Blockchain:
         valid = TaskService.validateTaskSolution(task, taskSolution)
         if not valid:
             return False
+        if taskSolution.taskId not in self.untrainedTasks.keys():
+            oldTaskSol = None
+            for wstId in self.wstPool.keys():
+                wst = self.wstPool[wstId]
+                if wst.taskId == taskSolution.taskId:
+                    oldTaskSol = wst
+                    break
+            if oldTaskSol == None:
+                return False
+            if oldTaskSol.accuracy > taskSolution.accuracy:
+                return False
+            del self.wstPool[oldTaskSol.getHash()]
+        else:
+            del self.untrainedTasks[taskSolution.taskId]
         self.wstPool[taskSolution.getHash()] = taskSolution
-        del self.untrainedTasks[taskSolution.taskId]
         return True
 
     def verifyTransaction(self, transaction: Transaction, txIndependentlyVerified=False) -> Dict:
@@ -279,13 +297,13 @@ class Blockchain:
         return False
 
     def findByTxid(self, txId: str):
-        print(self.mainChain)
+        # print(self.mainChain)
         for blockHash in self.mainChain:
             block = self.blocks[blockHash]
-            print(block)
+            # print(block)
             for transaction in block.transactions:
                 txHash = transaction.getHash()
-                print(txHash,txId)
+                # print(txHash,txId)
                 if txHash == txId:
                     return transaction
         
@@ -319,7 +337,7 @@ class Blockchain:
                 if tx.type == 'taskSolution':
                     if tx.publicKey == pubKey:
                         wstBalance += tx.wst
-        print("wst balance: " + str(wstBalance))
+        # print("wst balance: " + str(wstBalance))
         return wstBalance
 
     @staticmethod

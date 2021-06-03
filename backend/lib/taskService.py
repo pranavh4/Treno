@@ -41,16 +41,23 @@ class EarlyStoppingByValAcc(tf.keras.callbacks.Callback):
 
 class TaskService:
     
-    downloadFolder = "../../downloads"
-    solutionFolder = "../../solutions"
-    taskFolder = "../../currentTask"
-    taskSolutionFolder = "../../taskSolution"
+    downloadFolder = None
+    solutionFolder = None
+    taskFolder = None
+    taskSolutionFolder = None
+
+    @staticmethod
+    def setFilePaths(port):
+        TaskService.downloadFolder = Path(__file__).parent / f"../../mlFiles/{port}/downloads"
+        TaskService.solutionFolder = Path(__file__).parent / f"../../mlFiles/{port}/solutions"
+        TaskService.taskFolder = Path(__file__).parent / f"../../mlFiles/{port}/currentTask"
+        TaskService.taskSolutionFolder =  Path(__file__).parent / f"../../mlFiles/{port}/taskSolution"
 
     @staticmethod
     def uploadTaskSolution(fileName: str):
         url = "https://transfer.sh/solution"
 
-        payload = Path(TaskService.solutionFolder + "/{fileName}.h5".format(fileName=fileName)).read_bytes()
+        payload = Path(TaskService.solutionFolder / "{fileName}.h5".format(fileName=fileName)).read_bytes()
         headers = {
             'Content-Type': 'application/octet-stream'
         }
@@ -67,14 +74,14 @@ class TaskService:
         # response = requests.request("GET", task.resourceURL, headers=headers, data=payload)
         # Path(TaskService.downloadFolder +"/" + task.resourceURL.split('/')[-1]).write_bytes(response.content)
 
-        Path(TaskService.downloadFolder + "/tasks").mkdir(parents=True, exist_ok=True)
+        Path(TaskService.downloadFolder / "tasks").mkdir(parents=True, exist_ok=True)
         Path(TaskService.taskFolder).mkdir(parents=True, exist_ok=True)
-        fileLoc = TaskService.downloadFolder+"/tasks/{id}.zip".format(id = task.getHash())
+        fileLoc = TaskService.downloadFolder / "tasks/{id}.zip".format(id = task.getHash())
         if Path(fileLoc).exists():
             print("Task Already Downloaded ...")
         else:
             print("Downloading Task ...")
-            file = wget.download(task.resourceURL, out=fileLoc)
+            file = wget.download(task.resourceURL, out=str(fileLoc))
             print("Download completed ..., ", file)
         #unzip to taskFolder
         print("Extracting the file ...")
@@ -85,7 +92,7 @@ class TaskService:
     def downloadTaskSolution(taskSolution: TaskSolution) -> str:
         # Path(TaskService.downloadFolder + "/taskSolutions").mkdir(parents=True, exist_ok=True)
         Path(TaskService.taskSolutionFolder).mkdir(parents=True, exist_ok=True)
-        fileLoc = TaskService.taskSolutionFolder+"/{id}.h5".format(id=taskSolution.taskId)
+        fileLoc = TaskService.taskSolutionFolder / "{id}.h5".format(id=taskSolution.taskId)
         if Path(fileLoc).exists():
             Path(fileLoc).unlink()
         # else:
@@ -99,8 +106,8 @@ class TaskService:
             global thresholdReached 
             thresholdReached = False
             #read data
-            train = pd.read_csv(TaskService.taskFolder+'/data/train.csv',  header=None)   
-            test = pd.read_csv(TaskService.taskFolder+'/data/test.csv',  header=None)   
+            train = pd.read_csv(TaskService.taskFolder / 'data/train.csv',  header=None)   
+            test = pd.read_csv(TaskService.taskFolder / 'data/test.csv',  header=None)   
             
             #spliting x and y
             yTrain = train.iloc[: , -1]
@@ -113,7 +120,7 @@ class TaskService:
             yTestCat = to_categorical(yTest)
 
             #load model
-            mlModel = tf.keras.models.load_model(TaskService.taskFolder+'/model')
+            mlModel = tf.keras.models.load_model(TaskService.taskFolder / 'model')
             physical_devices = tf.config.list_physical_devices('GPU')
             print("Device available : ", physical_devices)
             
@@ -122,7 +129,7 @@ class TaskService:
 
             #callbacks to save best acc mdodel, stop on reaching threshold
             checkpointer1 = ModelCheckpoint(
-                filepath= TaskService.solutionFolder + '/{id}.h5'.format(id=task.getHash()), 
+                filepath= TaskService.solutionFolder / '{id}.h5'.format(id=task.getHash()), 
                 verbose=1, 
                 save_best_only=True,
                 save_weights_only=True, 
@@ -172,11 +179,12 @@ class TaskService:
     @staticmethod
     def __validateTaskFiles() -> bool:
         try:
-            mlModel = tf.keras.models.load_model(TaskService.taskFolder +'/model')
-            train = pd.read_csv(TaskService.taskFolder + '/data/train.csv',  header=None)   
-            test = pd.read_csv(TaskService.taskFolder + '/data/test.csv',  header=None)   
+            mlModel = tf.keras.models.load_model(TaskService.taskFolder / 'model')
+            train = pd.read_csv(TaskService.taskFolder / 'data/train.csv',  header=None)   
+            test = pd.read_csv(TaskService.taskFolder / 'data/test.csv',  header=None)   
             return True
-        except:
+        except Exception as e:
+            print(e)
             print("Task File validation unsuccessful")
             return False  
 
@@ -198,7 +206,7 @@ class TaskService:
         TaskService.downloadTaskSolution(taskSolution)
         try:
             #read data
-            test = pd.read_csv(TaskService.taskFolder+'/data/test.csv',  header=None)   
+            test = pd.read_csv(TaskService.taskFolder / 'data/test.csv',  header=None)   
             
             #spliting x and y
             yTest = test.iloc[: , -1] 
@@ -208,10 +216,10 @@ class TaskService:
             yTestCat = to_categorical(yTest)
 
             #load model
-            mlModel = tf.keras.models.load_model(TaskService.taskFolder+'/model')
+            mlModel = tf.keras.models.load_model(TaskService.taskFolder / 'model')
 
             #load solution weights
-            mlModel.load_weights(TaskService.taskSolutionFolder+"/{id}.h5".format(id=taskSolution.taskId))
+            mlModel.load_weights(TaskService.taskSolutionFolder / "{id}.h5".format(id=taskSolution.taskId))
       
             print("Evaluating the model...")
             loss,acc = mlModel.evaluate(xTest,yTestCat)

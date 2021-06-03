@@ -12,7 +12,7 @@ class Task:
         self.maxEpochs = maxEpochs
         self.publicKey = publicKey
         self.signature = signature
-        assert threshold >50 and threshold <80
+        assert threshold >50 and threshold <95
 
     def toDict(self) -> OrderedDict:
         return OrderedDict({
