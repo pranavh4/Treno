@@ -20,7 +20,7 @@ class Block:
 
     def getHash(self) -> str:
         return sha256(bytes(str(self),encoding='utf-8')).hexdigest()
-
+        
     def signBlock(self, privateKey):
         self.signature = generateSignature(self.getUnsignedStr(), privateKey)
     
@@ -33,7 +33,7 @@ class Block:
                 "cumulativeDifficulty": self.cumulativeDifficulty,
                 "generatorPubKey": self.generatorPubKey,
                 "signature": self.signature,
-                "transactions":self.transactions
+                "transactions":[Transaction.toDict(t) for t in self.transactions]
         })
 
     def getUnsignedStr(self):
@@ -45,13 +45,25 @@ class Block:
         return json.dumps(self, default=lambda o: o.toDict())
 
     @classmethod
-    def fromDict(cls, dict: Dict) -> Block:
-        transactions = [Transaction.fromDict(t) for t in dict["transactions"]]
+    def fromDict(cls, Dict: dict) -> Block:
+        if Dict==None:
+            return None
+        transactions = [Transaction.fromDict(t) for t in Dict["transactions"]]
+        if "timestamp" in Dict:
+            return cls(            
+                transactions,
+                Dict["prevBlockHash"],
+                Dict["generatorPubKey"],
+                Dict["generationSignature"],
+                Dict["baseTarget"],
+                Dict["cumulativeDifficulty"],
+                Dict["timestamp"]
+            )
         return cls(
             transactions,
-            dict["prevBlockHash"],
-            dict["baseTarget"],
-            dict["generationSignature"],
-            dict["cumulativeDifficulty"],
-            dict["generatorPubKey"]
+            Dict["prevBlockHash"],
+            Dict["generatorPubKey"],
+            Dict["generationSignature"],
+            Dict["baseTarget"],
+            Dict["cumulativeDifficulty"]
         )

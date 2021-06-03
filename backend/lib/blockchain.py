@@ -45,6 +45,7 @@ class Blockchain:
             genesisKey["publicKey"],
             "0000000000000000000000000000000000000000000000000000000000000000",
             153722867,
+            0,
             0
             )
         block.signBlock(genesisKey["privateKey"])
