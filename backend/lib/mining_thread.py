@@ -55,7 +55,7 @@ class MiningThread(threading.Thread):
         # print(generationLimit - self.hitTime)
         # print(str(self.hitTime - lastBlock.timestamp) + " " + str(time.time() - lastBlock.timestamp))
         # print("hit vs genLim: " + str(self.hitTime) + " " + str(generationLimit))
-        if self.hitTime == int(math.floor(time.time())):
+        if self.hitTime == (int(math.floor(time.time())) - self.blockchain.GENESIS_NODE_TIMESTAMP):
             print("added block")
             block = self.createBlock()
             self.blockchain.addBlock(block)

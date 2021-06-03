@@ -16,6 +16,7 @@ class Blockchain:
     MAX_WST_IN_BLOCK = 50
     MAX_TASK_REQUESTS_IN_BLOCK = 50
     WST_AGE_LIMIT = 10000
+    GENESIS_NODE_TIMESTAMP = None
 
     def __init__(self):
         self.mainChain = []

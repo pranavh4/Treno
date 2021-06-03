@@ -16,7 +16,6 @@ from lib.taskThread import TaskThread
 app = Flask(__name__)
 CORS(app)
 
-GENESIS_NODE_TIMESTAMP = -1
 seedNodeUrl = "http://127.0.0.1:8001"
 blockRequestLimit = 2
 
@@ -165,12 +164,12 @@ if __name__ == "__main__":
     print(f"Received timestamp from seed node {seedTimestamp}")
     if seedTimestamp == -1:
         currTimestamp = int(time.time())
-        GENESIS_NODE_TIMESTAMP = currTimestamp
+        blockchain.GENESIS_NODE_TIMESTAMP = currTimestamp
         P2P.setGenesisNodeTimestamp(currTimestamp)    
     else:
-        GENESIS_NODE_TIMESTAMP = seedTimestamp
+        blockchain.GENESIS_NODE_TIMESTAMP = seedTimestamp
     
-    print(f"Global Timestamp: {GENESIS_NODE_TIMESTAMP}")
+    print(f"Global Timestamp: {blockchain.GENESIS_NODE_TIMESTAMP}")
 
     with open(args.keyFilePath) as f:
         keys = json.load(f)
