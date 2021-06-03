@@ -6,13 +6,14 @@ import requests
 from flask import Flask, jsonify, request, render_template
 from flask_cors import CORS
 from argparse import ArgumentParser
-
+import time
 from lib.blockchain import Blockchain
 from lib.mining_thread import MiningThread
 
 app = Flask(__name__)
 CORS(app)
 
+GENESIS_NODE_TIMESTAMP = -1
 seedNodeUrl = "http://127.0.0.1:8001"
 blockRequestLimit = 2
 
@@ -93,6 +94,7 @@ def getBlockChain():
 
     return jsonify(resp)
 
+
 @app.route("/test")
 def test():
     # print(blockchain.mainChain)
@@ -147,6 +149,16 @@ if __name__ == "__main__":
 
     blockchain = Blockchain()
     blockchain.createGenesisBlock()
+    seedTimestamp = P2P.getGenesisNodeTimestamp()
+    print(f"Received timestamp from seed node {seedTimestamp}")
+    if seedTimestamp == -1:
+        currTimestamp = int(time.time())
+        GENESIS_NODE_TIMESTAMP = currTimestamp
+        P2P.setGenesisNodeTimestamp(currTimestamp)     
+    else:
+        GENESIS_NODE_TIMESTAMP = seedTimestamp
+    
+    print(f"Global Timestamp: {GENESIS_NODE_TIMESTAMP}")
 
     with open(args.keyFilePath) as f:
         keys = json.load(f)

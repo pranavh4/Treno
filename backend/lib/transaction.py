@@ -31,8 +31,8 @@ class TransactionInput:
         return json.dumps(self, default=lambda o: o.toDict())
     
     @classmethod
-    def fromDict(cls, dict: Dict) -> TransactionInput:
-        return cls(dict["txId"], dict["outputIndex"], dict["signature"])
+    def fromDict(cls, Dict: dict) -> TransactionInput:
+        return cls(Dict["txId"], Dict["outputIndex"], Dict["signature"])
 
 class TransactionOutput:
     def __init__(self, amount: int, receiver: str):
@@ -49,8 +49,8 @@ class TransactionOutput:
         return json.dumps(self, default=lambda o: o.toDict())
 
     @classmethod
-    def fromDict(cls, dict: Dict) -> TransactionOutput:
-        return cls(dict["amount"], dict["receiver"])
+    def fromDict(cls, Dict: dict) -> TransactionOutput:
+        return cls(Dict["amount"], Dict["receiver"])
 
 class Transaction:
     def __init__(self, txIn: list[TransactionInput], txOut: list[TransactionOutput]):
@@ -64,8 +64,8 @@ class Transaction:
     def toDict(self) -> OrderedDict:
         return OrderedDict({
             "type": self.type,
-            "txIn": self.txIn,
-            "txOut": self.txOut
+            "txIn": [TransactionInput.toDict(t) for t in self.txIn],
+            "txOut":[TransactionOutput.toDict(t) for t in self.txOut]
         })
 
     def getUnsignedStr(self) -> str:
@@ -76,9 +76,9 @@ class Transaction:
         return json.dumps(dict, default=lambda o: o.toDict())
     
     @classmethod
-    def fromDict(cls, dict: Dict) -> Transaction:
-        txIn = [TransactionInput.fromDict(t) for t in dict["txIn"]]
-        txOut = [TransactionOutput.fromDict(t) for t in dict["txOut"]]
+    def fromDict(cls, Dict: dict) -> Transaction:
+        txIn = [TransactionInput.fromDict(t) for t in Dict["txIn"]]
+        txOut = [TransactionOutput.fromDict(t) for t in Dict["txOut"]]
         return cls(txIn, txOut)
 
     def __str__(self) -> str:

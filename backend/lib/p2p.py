@@ -1,8 +1,11 @@
 import requests
 import json
 import random
+from flask import jsonify
 import math
+from lib.block import Block
 class P2P:
+
     seed_url='http://localhost:8001'
 
     @staticmethod
@@ -31,6 +34,22 @@ class P2P:
             blocks.append(blockChain.blocks[blockChain.mainChain[blockHash]])
         return blocks
     
+    @staticmethod
+    def getGenesisNodeTimestamp():
+        response = requests.get(f"{P2P.seed_url}/getGenesisNodeTimestamp").json()
+        return response["genesisNodeTimestamp"]
+    
+    @staticmethod
+    def setGenesisNodeTimestamp(timestamp):
+        print(f"Sending Genesis Node timestamp to Seed Node {timestamp}")
+        response = requests.post(url=f"{P2P.seed_url}/setGenesisNodeTimestamp",json={"genesisNodeTimestamp":timestamp}).json()
+        if response["status"]=="Success":
+            print("Set genesis node timestamp successfully")
+            return 1
+        else:
+            print("Error occurred in setting timestamp")
+            return 0
+
     @staticmethod
     def syncNode(blockChain,limit,nodes):
         payload = {}
