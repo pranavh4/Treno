@@ -12,7 +12,6 @@ from .transaction import *
 from .utils import *
 import math
 class MiningThread(threading.Thread):
-    # FORGING_DELAY = 30
 
     def __init__(self, blockchain: Blockchain, publicKey: str, privateKey: str):
         super().__init__()
@@ -58,10 +57,10 @@ class MiningThread(threading.Thread):
         return hitValue
 
     @staticmethod
-    def getHitTime(block: Block, effectiveBalance: int, hitValue: int, target: int) -> int:
+    def getHitTime(block: Block, effectiveBalance: int, hitValue: int, target: int, forgingDelay: int = 30) -> int:
         hitTime = block.timestamp + (hitValue / (effectiveBalance * target))
-        print("Hit interval: " + str(hitTime - block.timestamp))
-        return int(math.floor(hitTime))
+        print("Hit interval: " + str(hitTime - block.timestamp + forgingDelay))
+        return int(math.floor(hitTime)) + forgingDelay
 
     def setLastBlock(self, block: Block):
         height = self.blockchain.mainChain.index(block.getHash()) + 1
@@ -134,7 +133,7 @@ class MiningThread(threading.Thread):
             remainingTasks = [self.blockchain.taskPool[k] for k in self.blockchain.taskPool.keys() if k not in [wst.taskId for wst in wstTransactions]]
             taskRequests += remainingTasks[:maxTasks]
         
-        block.transactions = blockTransactions + wstTransactions + taskRequests
+        block.transactions = blockTransactions + taskRequests + wstTransactions
         block.signBlock(self.privateKey)
         return block 
 
@@ -149,7 +148,7 @@ class MiningThread(threading.Thread):
             s = 0
             for i in range(len(blocks) - 1):
                 s += blocks[i + 1].timestamp - blocks[i].timestamp
-            s /= len(blocks)
+            s /= (len(blocks) - 1)
         else:
             s = 60
         tp = blocks[-1].baseTarget

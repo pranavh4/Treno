@@ -1,7 +1,7 @@
-from time import time
+from .task import Task, TaskSolution
+from .taskService import TaskService
 from typing import Dict
 from .block import Block
-from hashlib import sha256
 from pathlib import Path
 from .transaction import Transaction, TransactionInput, TransactionOutput
 from .utils import validateSignature
@@ -25,6 +25,7 @@ class Blockchain:
         self.utxoPool = {}
         self.taskPool = {}
         self.wstPool = {}
+        self.untrainedTasks = {}
 
     def createGenesisBlock(self):
         genesisKeyPath = Path(__file__).parent / "resources/genesisKey.json"
@@ -35,9 +36,11 @@ class Blockchain:
             [TransactionInput("0",-1, "0")],
             [TransactionOutput(self.MAX_COINS, genesisKey["publicKey"])]
         )
+
+        wst = TaskSolution("0","0",0.0,1,genesisKey["publicKey"],"0")
         # print(transaction)
         block = Block(
-            [transaction],
+            [transaction, wst] ,
             "0",
             genesisKey["publicKey"],
             "0000000000000000000000000000000000000000000000000000000000000000",
@@ -64,16 +67,22 @@ class Blockchain:
         self.blocks[blockHash] = block
 
         if len(block.transactions):
-            coinbaseTx = block.transactions[0]
-            self.addUTXO(
-                coinbaseTx.getHash(),
-                0,
-                coinbaseTx.txOut[0].amount,
-                coinbaseTx.txOut[0].receiver
-            )
+            if self.hasCurrencyTransactions(block):
+                coinbaseTx = block.transactions[0]
+                self.addUTXO(
+                    coinbaseTx.getHash(),
+                    0,
+                    coinbaseTx.txOut[0].amount,
+                    coinbaseTx.txOut[0].receiver
+                )
 
             for tx in block.transactions[1:]:
-                del self.transactionPool[tx.getHash()]
+                if tx.type == "currency":
+                    del self.transactionPool[tx.getHash()]
+                elif tx.type == "task":
+                    del self.taskPool[tx.getHash()]
+                else:
+                    del self.wstPool[tx.getHash()]
         return True
 
     def verifyBlock(self, block: Block) -> bool:
@@ -104,23 +113,39 @@ class Blockchain:
             return False
         if len(block.transactions)==0:
             return True
-        if not self.verifyCoinbase(block):
+        if self.hasCurrencyTransactions(block) and not self.verifyCoinbase(block):
             print("Coinbase invalid")
             return False
 
         for tx in block.transactions[1:]:
-            if tx.getHash() not in self.transactionPool.keys():
-                sender = self.findByTxid(tx.txIn[0].txId).txOut[tx.txIn[0].outputIndex].receiver
-                self.addTransaction(tx, sender)
-            if not self.verifyTransaction(tx, True):
-                print("transaction invalid")
-                return False
+            if tx.type == "currency":
+                if tx.getHash() not in self.transactionPool.keys():
+                    sender = self.findByTxid(tx.txIn[0].txId).txOut[tx.txIn[0].outputIndex].receiver
+                    self.addTransaction(tx, sender)
+                if not self.verifyTransaction(tx, True):
+                    print("transaction invalid")
+                    return False
+            elif tx.type == "task":
+                if tx.getHash() not in self.taskPool.keys():
+                    if not self.addTask(tx):
+                        print("task invalid")
+                        return False
+            else:
+                if tx.getHash() not in self.wstPool.keys():
+                    if not self.addTaskSolution(tx):
+                        print("task solution invalid")
+                        return False
         return True
 
     def popLastBlock(self):
         block = self.blocks[self.mainChain[-1]]
         for tx in block.transactions:
-            self.transactionPool[tx.getHash()] = tx
+            if tx.type == "currency":
+                self.transactionPool[tx.getHash()] = tx
+            elif tx.type == "task":
+                self.taskPool[tx.getHash()] = tx
+            else:
+                self.wstPool[tx.getHash()] = tx
         self.mainChain.pop() 
 
     def addTransaction(self, transaction: Transaction, sender: str) -> bool:
@@ -157,6 +182,24 @@ class Blockchain:
         
         self.transactionPool[transaction.getHash()] = {"transaction":transaction,"transactionFee": valid["transactionFee"]}
 
+        return True
+
+    def addTask(self, task: Task) -> bool:
+        valid = TaskService.validateTask(task)
+        if not valid:
+            return False
+        self.taskPool[task.getHash()] = task
+        return True
+
+    def addTaskSolution(self, taskSolution: TaskSolution) -> bool:
+        task = self.findByTxid(taskSolution.taskId)
+        if task == None or task.type != "task":
+            return False
+        valid = TaskService.validateTaskSolution(task, taskSolution)
+        if not valid:
+            return False
+        self.wstPool[taskSolution.getHash()] = taskSolution
+        del self.untrainedTasks[taskSolution.taskId]
         return True
 
     def verifyTransaction(self, transaction: Transaction, txIndependentlyVerified=False) -> Dict:
@@ -204,7 +247,7 @@ class Blockchain:
         if coinbaseTx.txIn[0].txId!="0":
             return False
         coinbaseAmt = coinbaseTx.txOut[0].amount
-        txIds = [t.getHash() for t in block.transactions[1:]]
+        txIds = [t.getHash() for t in block.transactions[1:] if t.type == "currency"]
         try:
             minerReward = sum([self.transactionPool[txId]["transactionFee"] for txId in txIds])
         except:
@@ -235,7 +278,7 @@ class Blockchain:
             return True
         return False
 
-    def findByTxid(self, txId: str) -> Transaction:
+    def findByTxid(self, txId: str):
         print(self.mainChain)
         for blockHash in self.mainChain:
             block = self.blocks[blockHash]
@@ -266,7 +309,6 @@ class Blockchain:
             self.utxoPool[receiver].append(utxo)
 
     def getWSTBalance(self, height: int, pubKey: str) -> int:
-        return 1
         startIndex = height - self.WST_AGE_LIMIT
         startIndex = startIndex if startIndex > 0 else 0
         blockIds = self.mainChain[startIndex : height + 1]
@@ -274,7 +316,12 @@ class Blockchain:
         for bId in blockIds:
             block = self.blocks[bId]
             for tx in block.transactions:
-                if tx.type == 'WST':
-                    if tx.receiver == pubKey:
-                        wstBalance += tx.amount
+                if tx.type == 'taskSolution':
+                    if tx.publicKey == pubKey:
+                        wstBalance += tx.wst
+        print("wst balance: " + str(wstBalance))
         return wstBalance
+
+    @staticmethod
+    def hasCurrencyTransactions(block: Block) -> bool:
+        return len([t for t in block.transactions if t.type=="currency"]) > 0

@@ -3,13 +3,10 @@ from __future__ import annotations
 from hashlib import sha256
 from typing import Dict, OrderedDict
 import json
-from Crypto.PublicKey import RSA
-from Crypto.Signature import PKCS1_v1_5
-from Crypto.Hash import SHA
-import time
 
 class Task:
     def __init__(self, resourceURL: str, threshold: float, maxEpochs: int, publicKey: str, signature:str):
+        self.type = "task"
         self.resourceURL = resourceURL
         self.threshold = round(threshold,2)
         self.maxEpochs = maxEpochs
@@ -19,6 +16,7 @@ class Task:
 
     def toDict(self) -> OrderedDict:
         return OrderedDict({
+            "type": self.type,
             "resourceURL": self.resourceURL,
             "threshold": self.threshold,
             "maxEpochs": self.maxEpochs,
@@ -48,8 +46,9 @@ class Task:
         return cls(dict["resourceURL"], dict["threshold"], dict["maxEpochs"], dict["publicKey"], dict["signature"])
 
 class TaskSolution:
-    def __init__(self, task: Task, modelURL: str, accuracy: float, wst: int, publicKey: str, signature:str):
-        self.taskId = task.getHash()
+    def __init__(self, taskId: str, modelURL: str, accuracy: float, wst: int, publicKey: str, signature:str):
+        self.type = "taskSolution"
+        self.taskId = taskId
         self.modelURL = modelURL
         self.accuracy = round(accuracy,2)
         self.wst = wst
@@ -58,6 +57,7 @@ class TaskSolution:
 
     def toDict(self) -> OrderedDict:
         return OrderedDict({
+            "type": self.type,
             "taskId": self.taskId,
             "modelURL": self.modelURL,
             "accuracy": self.accuracy,
@@ -65,6 +65,9 @@ class TaskSolution:
             "publicKey": self.publicKey,
             "signature": self.signature
         })
+
+    def getHash(self) -> str:
+        return sha256(bytes(str(self),encoding='utf-8')).hexdigest()
 
     def __eq__(self, o: object) -> bool:
         if (isinstance(o, TaskSolution)):
