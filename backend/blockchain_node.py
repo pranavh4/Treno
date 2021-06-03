@@ -1,17 +1,18 @@
 from lib.taskService import TaskService
 from lib.task import Task
 from lib.p2p import P2P
-import json
+from lib.blockchain import Blockchain
+from lib.mining_thread import MiningThread
+from lib.taskThread import TaskThread
 from lib.block import Block
 from lib.transaction import TransactionInput,Transaction, TransactionOutput
+import json
 import requests
 from flask import Flask, jsonify, request, render_template
 from flask_cors import CORS
 from argparse import ArgumentParser
 import time
-from lib.blockchain import Blockchain
-from lib.mining_thread import MiningThread
-from lib.taskThread import TaskThread
+import signal
 
 app = Flask(__name__)
 CORS(app)
@@ -79,6 +80,14 @@ def fetchBlockHeight():
     response["blockHeight"] = len(blockchain.mainChain)
     return response
 
+@app.route("/fetchBlockByIndex", methods = ["POST"])
+def fetchBlockByIndex():
+    requestData = request.json
+    index = requestData["index"]
+    block = blockchain.blocks[blockchain.mainChain[index]].toDict()
+    blockHash = blockchain.mainChain[index]
+    return jsonify({"block":block,"hash":blockHash})
+
 @app.route("/fetchBlocks",methods = ['POST'])
 def fetchBlocks():
     requestData = request.json
@@ -88,6 +97,13 @@ def fetchBlocks():
     response["blocks"] = P2P.fetchBlocks(blockchain,blockHash,limit)
     return response
 
+@app.route("/receiveBlock",methods= ["POST"])
+def receiveBlock():
+    requestData = request.json
+    source = requestData["sender"]
+    block = Block.fromDict(requestData["block"])
+    print(f"Received block from {source}")
+    return jsonify({"status":f"{port} received block successfully"})
 
 @app.route("/getBlockChain")
 def getBlockChain():
@@ -150,14 +166,22 @@ def testNew():
         print("*"*20)
     return jsonify({"status":"success"})
 
-
+# def handler(signum, frame):
+#     msg = "Ctrl-c was pressed. Deleting Registration fromm seed_node"
+#     P2P.deleteNode()
+#     print(msg, end="", flush=True)
+#     exit(1)
+ 
+# signal.signal(signal.SIGINT, handler)
 
 if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument("keyFilePath", help="Path of json file which stores your public and private keys")
     parser.add_argument("port", help="Port to start server on")
     args = parser.parse_args()
-
+    port = args.port
+    P2P.setP2PPort(port)
+    print(f"PORT: {P2P.port}")
     blockchain = Blockchain()
     blockchain.createGenesisBlock()
     seedTimestamp = P2P.getGenesisNodeTimestamp()
@@ -165,8 +189,10 @@ if __name__ == "__main__":
     if seedTimestamp == -1:
         currTimestamp = int(time.time())
         blockchain.GENESIS_NODE_TIMESTAMP = currTimestamp
-        P2P.setGenesisNodeTimestamp(currTimestamp)    
+        P2P.setGenesisNodeTimestamp(currTimestamp)
+        P2P.registerNode()
     else:
+        P2P.registerNode()
         blockchain.GENESIS_NODE_TIMESTAMP = seedTimestamp
     
     print(f"Global Timestamp: {blockchain.GENESIS_NODE_TIMESTAMP}")
@@ -175,9 +201,9 @@ if __name__ == "__main__":
         keys = json.load(f)
     
     print(keys)
-    port = args.port
+    
     nodes = []
-    nodes = requests.get(f"{seedNodeUrl}/getNodes").json()["activeNodes"]
+    nodes = P2P.fetchNodes()
     if nodes!=[]:
         P2P.syncNode(blockchain,blockRequestLimit,nodes)
     

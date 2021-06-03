@@ -42,8 +42,8 @@ class Task:
         return json.dumps(dict, default=lambda o: o.toDict())
 
     @classmethod
-    def fromDict(cls, dict: Dict) -> Task:
-        return cls(dict["resourceURL"], dict["threshold"], dict["maxEpochs"], dict["publicKey"], dict["signature"])
+    def fromDict(cls, Dict: dict) -> Task:
+        return cls(Dict["resourceURL"], Dict["threshold"], Dict["maxEpochs"], Dict["publicKey"], Dict["signature"])
 
 class TaskSolution:
     def __init__(self, taskId: str, modelURL: str, accuracy: float, wst: int, publicKey: str, signature:str):
@@ -84,6 +84,6 @@ class TaskSolution:
         return json.dumps(dict, default=lambda o: o.toDict())
 
     @classmethod
-    def fromDict(cls, dict: Dict) -> TaskSolution:
-        return cls(dict["taskId"], dict["modelURL"], dict["accuracy"], dict["wst"], dict["publicKey"], dict["signature"])
+    def fromDict(cls, Dict: dict) -> TaskSolution:
+        return cls(Dict["taskId"], Dict["modelURL"], Dict["accuracy"], Dict["wst"], Dict["publicKey"], Dict["signature"])
         

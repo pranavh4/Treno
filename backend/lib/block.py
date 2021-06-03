@@ -1,4 +1,5 @@
 from __future__ import annotations
+from .task import TaskSolution, Task
 
 from .transaction import Transaction
 from hashlib import sha256
@@ -8,7 +9,7 @@ import time
 import json
 
 class Block:
-    def __init__(self, transactions: list, prevBlockHash: str, generatorPubKey: str, generationSignature: str, baseTarget: int, cumulativeDifficulty: int, timestamp: int = int(time.time())):
+    def __init__(self, transactions: list, prevBlockHash: str, generatorPubKey: str, generationSignature: str, baseTarget: int, cumulativeDifficulty: int, timestamp: int = int(time.time()), signature: str = ''):
         self.transactions = transactions
         self.prevBlockHash = prevBlockHash
         self.timestamp = timestamp
@@ -16,7 +17,7 @@ class Block:
         self.generationSignature = generationSignature
         self.cumulativeDifficulty = cumulativeDifficulty
         self.generatorPubKey = generatorPubKey
-        self.signature = ''
+        self.signature = signature
 
     def getHash(self) -> str:
         return sha256(bytes(str(self),encoding='utf-8')).hexdigest()
@@ -48,7 +49,15 @@ class Block:
     def fromDict(cls, Dict: dict) -> Block:
         if Dict==None:
             return None
-        transactions = [Transaction.fromDict(t) for t in Dict["transactions"]]
+        transactions=[]
+        for transaction in Dict["transactions"]:
+            if transaction["type"]=="currency":
+                transactions.append(Transaction.fromDict(transaction))
+            elif transaction["type"]=="taskSolution":
+                transactions.append(TaskSolution.fromDict(transaction))
+            elif transaction["type"]=="task":
+                transactions.append(Task.fromDict(transaction))
+        # transactions = [Transaction.fromDict(t) for t in Dict["transactions"]]
         if "timestamp" in Dict:
             return cls(            
                 transactions,
@@ -57,7 +66,8 @@ class Block:
                 Dict["generationSignature"],
                 Dict["baseTarget"],
                 Dict["cumulativeDifficulty"],
-                Dict["timestamp"]
+                Dict["timestamp"],
+                Dict["signature"]
             )
         return cls(
             transactions,

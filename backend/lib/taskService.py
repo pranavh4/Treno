@@ -2,14 +2,14 @@ import tensorflow as tf
 from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
 from tensorflow.keras.optimizers import SGD, Adam
-from task import Task, TaskSolution
+from .task import Task, TaskSolution
 import pandas as pd
 import numpy as np
 from pyunpack import Archive
 from pathlib import Path
 import requests
 import wget
-from utils import generateSignature, validateSignature
+from .utils import generateSignature, validateSignature
 import traceback
 
 # Task:

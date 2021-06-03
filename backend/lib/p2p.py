@@ -9,16 +9,21 @@ from lib.block import Block
 class P2P:
 
     seed_url='http://localhost:8001'
+    port = 5000
 
     @staticmethod
-    def registerNode(port):
-        payload = {"address" : '127.0.0.1:'+str(port)}
+    def setP2PPort(port):
+        P2P.port = port
+    
+    @staticmethod
+    def registerNode():
+        payload = {"address" : '127.0.0.1:'+str(P2P.port)}
         response = requests.post(url=P2P.seed_url+'/registerNode',json=payload)
         return json.loads(response.text)
 
     @staticmethod
-    def deleteNode(port):
-        payload = {"address" : '127.0.0.1:'+str(port)}
+    def deleteNode():
+        payload = {"address" : '127.0.0.1:'+str(P2P.port)}
         response = requests.post(url=P2P.seed_url+'/deleteNode',json=payload)
         return json.loads(response.text)
     
@@ -26,14 +31,17 @@ class P2P:
     def fetchNodes():
         response = requests.get(url=P2P.seed_url + "/getNodes")
         nodes = response.json()["activeNodes"]
+        if f"127.0.0.1:{P2P.port}" in nodes:
+            nodes.remove(f"127.0.0.1:{P2P.port}")
         return nodes
 
     @staticmethod
     def fetchBlocks(blockChain,blockHash,limit):
         blocks = []
         index = blockChain.mainChain.index(blockHash)
-        for blockHash in blockChain.mainChain[index:index+limit]:
-            blocks.append(blockChain.blocks[blockChain.mainChain[blockHash]])
+        for blockHash in blockChain.mainChain[index+1:index+limit+1]:
+            blocks.append(blockChain.blocks[blockHash].toDict())
+        print(f"Added blocks of index {index+1}, {index+1+limit}")
         return blocks
     
     @staticmethod
@@ -69,9 +77,8 @@ class P2P:
 
         chosenNode = random.choice(nodes)
         fetchBlockHeightURL = f"http://{chosenNode}/fetchBlockHeight"
-
-        blockHeight = requests.get(fetchBlockHeightURL).json()["blockHeight"]
-        
+        blockHeight = requests.get(fetchBlockHeightURL).json()["blockHeight"] -1
+        print("Height: ",fetchBlockHeightURL,blockHeight)
         fetchBlocksUrl = f"http://{chosenNode}/fetchBlocks"
         blocksFetched = 0
 
@@ -82,10 +89,23 @@ class P2P:
                 payloadLimit = blockHeight - blocksFetched
             payload["limit"] = payloadLimit
             payload["blockHash"] = blockChain.mainChain[-1]
-            blocks = requests.post(fetchBlocksUrl,data=payload).json()["blocks"]
+            print("PAYLOAD")
+            print(payload)
+            blocks = requests.post(fetchBlocksUrl,json=payload).json()["blocks"]
             for block in blocks:
-                blockChain.addBlock(block)
+                print(Block.fromDict(block))
+                blockChain.addBlock(Block.fromDict(block))
+                print("Added")
             blocksFetched+=payloadLimit
 
         print("Sync Node completed")
         
+    @staticmethod
+    def broadcastBlock(block,port):
+        nodes = P2P.fetchNodes(port)
+        payload={}
+        payload["block"]=block.toDict()
+        payload["sender"] = port
+        for node in nodes:
+            response = requests.post(url=f"{node}/receiveBlock", json = payload)
+            print(response.text)

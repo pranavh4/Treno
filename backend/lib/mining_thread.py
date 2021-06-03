@@ -59,6 +59,8 @@ class MiningThread(threading.Thread):
         if self.hitTime == (int(math.floor(time.time())) - self.blockchain.GENESIS_NODE_TIMESTAMP):
             print("added block")
             block = self.createBlock()
+            # print(block.toDict())
+            # P2P.broadcastBloock(block)
             self.blockchain.addBlock(block)
         return 
 
