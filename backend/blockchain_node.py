@@ -186,9 +186,9 @@ if __name__ == "__main__":
     miningThread.start()
 
     TaskService.setFilePaths(port)
-    # taskThread = TaskThread(blockchain, keys["publicKey"], keys["privateKey"])
-    # taskThread.setDaemon(True)
-    # taskThread.start()
+    taskThread = TaskThread(blockchain, keys["publicKey"], keys["privateKey"])
+    taskThread.setDaemon(True)
+    taskThread.start()
 
     
 

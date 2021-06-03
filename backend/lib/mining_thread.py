@@ -55,6 +55,7 @@ class MiningThread(threading.Thread):
         # print(generationLimit - self.hitTime)
         # print(str(self.hitTime - lastBlock.timestamp) + " " + str(time.time() - lastBlock.timestamp))
         # print("hit vs genLim: " + str(self.hitTime) + " " + str(generationLimit))
+        print("Time: "  + str(time.time() - self.blockchain.GENESIS_NODE_TIMESTAMP))
         if self.hitTime == (int(math.floor(time.time())) - self.blockchain.GENESIS_NODE_TIMESTAMP):
             print("added block")
             block = self.createBlock()
@@ -88,9 +89,9 @@ class MiningThread(threading.Thread):
         return generationLimit if generationLimit - self.hitTime > 3600 else self.hitTime + 1
 
     def createBlock(self) -> Block:
-        txIds = self.blockchain.transactionPool.keys()
-        taskIds = self.blockchain.taskPool.keys()
-        wstIds = self.blockchain.wstPool.keys()
+        txIds = list(self.blockchain.transactionPool.keys())
+        taskIds = list(self.blockchain.taskPool.keys())
+        wstIds = list(self.blockchain.wstPool.keys())
         prevBlock = self.blockchain.blocks[self.blockchain.mainChain[-1]]
         prevBlockHash = prevBlock.getHash()
         blockTransactions = []
@@ -138,8 +139,15 @@ class MiningThread(threading.Thread):
         taskRequests = []
         wstTransactions = []
         if len(wstIds) != 0:
-            wstTransactions = sorted([self.blockchain.wstPool[wstId] for wstId in wstIds], key=lambda t:t.timestamp)[:self.blockchain.MAX_WST_IN_BLOCK]
-            taskRequests += [self.blockchain.taskPool[wst.taskId] for wst in wstTransactions]
+            # wstTransactions = [self.blockchain.wstPool[wstId] for wstId in wstIds][:self.blockchain.MAX_WST_IN_BLOCK]
+            # taskRequests += [self.blockchain.taskPool[wst.taskId] for wst in wstTransactions]
+            for i in range(len(wstIds)):
+                if i > self.blockchain.MAX_WST_IN_BLOCK:
+                    break
+                wst = self.blockchain.wstPool[wstIds[i]]
+                wstTransactions.append(wst)
+                if wst.taskId in taskIds:
+                    taskRequests.append(self.blockchain.taskPool[wst.taskId])
         
         if len(taskIds) != 0 and len(taskRequests) < self.blockchain.MAX_TASK_REQUESTS_IN_BLOCK:
             maxTasks = self.blockchain.MAX_TASK_REQUESTS_IN_BLOCK - len(taskRequests)

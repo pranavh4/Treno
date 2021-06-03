@@ -97,7 +97,7 @@ class TaskService:
             Path(fileLoc).unlink()
         # else:
         print("Downloading TaskSolution ...")
-        file = wget.download(taskSolution.modelURL, out=fileLoc)
+        file = wget.download(taskSolution.modelURL, out=str(fileLoc))
         print("Download completed ...")
 
     @staticmethod

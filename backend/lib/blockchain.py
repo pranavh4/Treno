@@ -218,6 +218,7 @@ class Blockchain:
                 return False
             del self.wstPool[oldTaskSol.getHash()]
         else:
+            print("deleted task")
             del self.untrainedTasks[taskSolution.taskId]
         self.wstPool[taskSolution.getHash()] = taskSolution
         return True
@@ -311,6 +312,18 @@ class Blockchain:
         
         try:
             transaction = self.transactionPool[txId]["transaction"]
+            return transaction
+        except:
+            pass
+
+        try:
+            transaction = self.taskPool[txId]
+            return transaction
+        except:
+            pass
+
+        try:
+            transaction = self.wstPool[txId]
             return transaction
         except:
             pass
