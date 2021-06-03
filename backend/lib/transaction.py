@@ -64,8 +64,8 @@ class Transaction:
     def toDict(self) -> OrderedDict:
         return OrderedDict({
             "type": self.type,
-            "txIn": [TransactionInput.toDict(t) for t in self.txIn],
-            "txOut":[TransactionOutput.toDict(t) for t in self.txOut]
+            "txIn": [t.toDict() for t in self.txIn],
+            "txOut":[t.toDict() for t in self.txOut]
         })
 
     def getUnsignedStr(self) -> str:

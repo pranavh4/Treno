@@ -33,7 +33,7 @@ class Block:
                 "cumulativeDifficulty": self.cumulativeDifficulty,
                 "generatorPubKey": self.generatorPubKey,
                 "signature": self.signature,
-                "transactions":[Transaction.toDict(t) for t in self.transactions]
+                "transactions":[t.toDict() for t in self.transactions]
         })
 
     def getUnsignedStr(self):
