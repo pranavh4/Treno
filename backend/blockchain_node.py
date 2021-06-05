@@ -1,3 +1,4 @@
+from lib.block_explorer import BlockExplorer
 from lib.task import TaskSolution
 from lib.taskService import TaskService
 from lib.task import Task
@@ -17,6 +18,7 @@ from argparse import ArgumentParser
 import time
 import signal
 import sys 
+
 app = Flask(__name__)
 CORS(app)
 
@@ -221,6 +223,32 @@ def signal_handler(sig, frame):
 
 
 
+# Block Explorer Endpoints
+@app.route("/get/blocks")
+def getBlocks():
+    endHeight = request.args.get("endHeight", -1)
+    numBlocks = request.args.get("numBlocks", 10)
+    blocks = blockExplorer.getBlocks(endHeight, numBlocks)
+    return jsonify({"blocks": blocks})
+
+@app.route("/get/transactions")
+def getTransactions():
+    publicKey = request.args.get("publicKey", None)
+    retData = blockExplorer.getTransactions(publicKey)
+    return jsonify(retData)  
+
+@app.route("/get/wst")
+def getWST():
+    publicKey = request.args.get("publicKey", None)
+    retData = blockExplorer.getWSTTransactions(publicKey)
+    return jsonify(retData)   
+
+@app.route("/get/tasks")
+def getTasks():
+    publicKey = request.args.get("publicKey", None)
+    retData = blockExplorer.getTasks(publicKey)
+    return jsonify(retData)     
+
 if __name__ == "__main__":
 
     signal.signal(signal.SIGBREAK, signal_handler)
@@ -255,6 +283,8 @@ if __name__ == "__main__":
     nodes = P2P.fetchNodes()
     if nodes!=[]:
         P2P.syncNode(blockchain,blockRequestLimit,nodes)
+    
+    blockExplorer = BlockExplorer(blockchain)
     
     miningThread = MiningThread(blockchain, keys["publicKey"], keys["privateKey"])
     miningThread.setDaemon(True)
