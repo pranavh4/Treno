@@ -1,11 +1,10 @@
-from backend.blockchain_node import bcolors
 from .task import Task, TaskSolution
 from .taskService import TaskService
 from typing import Dict
 from .block import Block
 from pathlib import Path
 from .transaction import Transaction, TransactionInput, TransactionOutput
-from .utils import validateSignature
+from .utils import validateSignature, bcolors
 from .block_verification_utils import *
 import json
 

@@ -6,6 +6,7 @@ from lib.blockchain import Blockchain
 from lib.mining_thread import MiningThread
 from lib.taskThread import TaskThread
 from lib.block import Block
+from lib.utils import bcolors
 from lib.transaction import TransactionInput,Transaction, TransactionOutput
 import json
 import requests
@@ -17,17 +18,6 @@ import signal
 import sys 
 app = Flask(__name__)
 CORS(app)
-class bcolors:
-    HEADER = '\033[95m'
-    OKBLUE = '\033[94m'
-    OKCYAN = '\033[96m'
-    OKGREEN = '\033[92m'
-    WARNING = '\033[93m'
-    FAIL = '\033[91m'
-    ENDC = '\033[0m'
-    BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
-
 
 seedNodeUrl = "http://127.0.0.1:8001"
 blockRequestLimit = 2
@@ -138,10 +128,10 @@ def receiveBlock():
     requestData = request.json
     source = requestData["sender"]
     block = Block.fromDict(requestData["block"])
-    print(f"Received block with Hash {block.getHash()}from {source}")
+    print(f"Received block with Hash {block.getHash()} from {source}")
     added = blockchain.addBlock(block)
     if added:
-        print(f"({P2P.port}) Added remote block {block.getHash()} received from {source}")
+        print(f"{bcolors.OKGREEN}({P2P.port}) Added remote block {block.getHash()} received from {source}{bcolors.ENDC}")
     return jsonify({"status":f"{port} received block successfully"})
 
 @app.route("/getBlockChain")
