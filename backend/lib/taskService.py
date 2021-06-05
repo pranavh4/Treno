@@ -1,3 +1,4 @@
+from flask.globals import request
 import tensorflow as tf
 from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
@@ -9,8 +10,9 @@ from pyunpack import Archive
 from pathlib import Path
 import requests
 import wget
-from .utils import generateSignature, validateSignature
+from .utils import bcolors, generateSignature, validateSignature
 import traceback
+from threading import get_ident
 
 # Task:
 #     |
@@ -34,7 +36,7 @@ class EarlyStoppingByValAcc(tf.keras.callbacks.Callback):
     def on_epoch_end(self, epoch, logs={}): 
         val_accuracy = logs.get(self.monitor)
         if(val_accuracy >= self.value): 
-            print("Threshold acc reached, stopping training ...")
+            print(f"{bcolors.WARNING}[ThreadID: {get_ident()}]{bcolors.ENDC} Threshold acc reached, stopping training ...")
             self.model.stop_training = True
             thresholdReached = True
 
@@ -61,9 +63,9 @@ class TaskService:
         headers = {
             'Content-Type': 'application/octet-stream'
         }
-        print("Uploading TaskSolution ...")
+        print(f"{bcolors.WARNING}[ThreadID: {get_ident()}]{bcolors.ENDC} Uploading TaskSolution ...")
         response = requests.request("PUT", url, headers=headers, data=payload)
-        print("TaskSolution Uploaded ...")
+        print(f"{bcolors.WARNING}[ThreadID: {get_ident()}]{bcolors.ENDC} TaskSolution Uploaded ...")
         return response.text
 
     @staticmethod
@@ -78,13 +80,19 @@ class TaskService:
         Path(TaskService.taskFolder).mkdir(parents=True, exist_ok=True)
         fileLoc = TaskService.downloadFolder / "tasks/{id}.zip".format(id = task.getHash())
         if Path(fileLoc).exists():
-            print("Task Already Downloaded ...")
+            print(f"{bcolors.WARNING}[ThreadID: {get_ident()}]{bcolors.ENDC} Task {task.getHash()} Already Downloaded ...")
         else:
-            print("Downloading Task ...")
-            file = wget.download(task.resourceURL, out=str(fileLoc))
-            print("Download completed ..., ", file)
+            print(f"{bcolors.WARNING}[ThreadID: {get_ident()}]{bcolors.ENDC} Downloading Task {task.getHash()} ...")
+            try:
+                file = wget.download(task.resourceURL, out=str(fileLoc))
+            except Exception as e:
+                print(f"{bcolors.WARNING}[ThreadID: {get_ident()}]{bcolors.ENDC} WGET ERROR")
+                for i in range(10000):
+                    continue
+                file = wget.download(task.resourceURL, out=str(fileLoc)) 
+            print(f"{bcolors.WARNING}[ThreadID: {get_ident()}]{bcolors.ENDC} Download completed ..., ", file)
         #unzip to taskFolder
-        print("Extracting the file ...")
+        print(f"{bcolors.WARNING}[ThreadID: {get_ident()}]{bcolors.ENDC} Extracting the file ...")
         Archive(fileLoc).extractall(TaskService.taskFolder)
         return fileLoc
 
@@ -92,13 +100,20 @@ class TaskService:
     def downloadTaskSolution(taskSolution: TaskSolution) -> str:
         # Path(TaskService.downloadFolder + "/taskSolutions").mkdir(parents=True, exist_ok=True)
         Path(TaskService.taskSolutionFolder).mkdir(parents=True, exist_ok=True)
-        fileLoc = TaskService.taskSolutionFolder / "{id}.h5".format(id=taskSolution.taskId)
+        fileLoc = TaskService.taskSolutionFolder / f"{taskSolution.getHash()}.h5"
         if Path(fileLoc).exists():
             Path(fileLoc).unlink()
         # else:
-        print("Downloading TaskSolution ...")
-        file = wget.download(taskSolution.modelURL, out=str(fileLoc))
-        print("Download completed ...")
+        print(f"{bcolors.WARNING}[ThreadID: {get_ident()}]{bcolors.ENDC} Downloading TaskSolution of ID {taskSolution.taskId}...")
+        try:
+            file = wget.download(taskSolution.modelURL, out=str(fileLoc))
+        except Exception as e:
+            print(f"{bcolors.WARNING}[ThreadID: {get_ident()}]{bcolors.ENDC} WGET ERROR")
+            for i in range(10000):
+                continue
+            file = wget.download(taskSolution.modelURL, out=str(fileLoc)) 
+
+        print(f"{bcolors.WARNING}[ThreadID: {get_ident()}]{bcolors.ENDC} Download completed of ID {taskSolution.taskId}...")
 
     @staticmethod
     def runTask(task: Task, publicKey: str, privateKey: str) -> TaskSolution:
@@ -122,7 +137,7 @@ class TaskService:
             #load model
             mlModel = tf.keras.models.load_model(TaskService.taskFolder / 'model')
             physical_devices = tf.config.list_physical_devices('GPU')
-            print("Device available : ", physical_devices)
+            print(f"{bcolors.WARNING}[ThreadID: {get_ident()}]{bcolors.ENDC} Device available : ", physical_devices)
             
             #create solutions folder if not present
             Path(TaskService.solutionFolder).mkdir(parents=True, exist_ok=True)
@@ -146,7 +161,7 @@ class TaskService:
                 metrics=['accuracy']
             )
 
-            print("Starting to train...")
+            print(f"{bcolors.WARNING}[ThreadID: {get_ident()}]{bcolors.ENDC} Starting to train task {task.getHash()}...")
             history = mlModel.fit(
                 xTrain,
                 yTrainCat,
@@ -156,10 +171,10 @@ class TaskService:
                 verbose=1,
                 callbacks=[checkpointer1, checkpointer2]
             )
-            print("Completed training...", history.history)
+            print(f"{bcolors.WARNING}[ThreadID: {get_ident()}]{bcolors.ENDC} {bcolors.OKGREEN}{bcolors.BOLD}Completed training {task.getHash()}... {history.history} {bcolors.ENDC}")
             
             taskSolutionURL = TaskService.uploadTaskSolution(task.getHash())
-            print(taskSolutionURL)
+            print(f"{bcolors.WARNING}[ThreadID: {get_ident()}]{bcolors.ENDC} Task Solution URL: {taskSolutionURL}")
             taskSolution = TaskSolution(
                 taskId = task.getHash(),
                 modelURL = taskSolutionURL,
@@ -170,10 +185,10 @@ class TaskService:
             )
             #sign the taskSolution
             taskSolution.signature = generateSignature(taskSolution.getUnsignedStr(),privateKey)
-            print(taskSolution.toDict())
+            print(f"{bcolors.WARNING}[ThreadID: {get_ident()}]{bcolors.ENDC} {taskSolution.toDict()}")
             return taskSolution
         except Exception as e:
-            print("Error occured while training..\n", e.__repr__)
+            print(f"{bcolors.WARNING}[ThreadID: {get_ident()}]{bcolors.ENDC} Error occured while training..\n", e.__repr__)
             traceback.print_exc()
   
     @staticmethod
@@ -185,20 +200,25 @@ class TaskService:
             return True
         except Exception as e:
             print(e)
-            print("Task File validation unsuccessful")
+            print(f"{bcolors.WARNING}[ThreadID: {get_ident()}]{bcolors.ENDC} Task File validation unsuccessful")
             return False  
 
     @staticmethod
     def validateTask(task: Task) -> bool:
         if not validateSignature(task.getUnsignedStr(), task.publicKey, task.signature):
             return False
-        TaskService.downloadTask(task)
-        return TaskService.__validateTaskFiles()
+        status = requests.get(url=task.resourceURL).status_code
+        if status==404:
+            print(f"{bcolors.WARNING}[ThreadID: {get_ident()}]{bcolors.ENDC} 404 Not Found Error")
+            return False
+        return True
 
     @staticmethod
     def validateTaskSolution(task: Task, taskSolution: TaskSolution) -> bool:
-        print("Validating TaskSolution...")
+        print(f"{bcolors.WARNING}[ThreadID: {get_ident()}]{bcolors.ENDC} Validating TaskSolution of ID {taskSolution.taskId}...")
         TaskService.validateTask(task)
+        TaskService.downloadTask(task)
+        TaskService.__validateTaskFiles()
         if taskSolution.taskId != task.getHash():
             return False
         if not validateSignature(taskSolution.getUnsignedStr(), taskSolution.publicKey, taskSolution.signature):
@@ -219,17 +239,17 @@ class TaskService:
             mlModel = tf.keras.models.load_model(TaskService.taskFolder / 'model')
 
             #load solution weights
-            mlModel.load_weights(TaskService.taskSolutionFolder / "{id}.h5".format(id=taskSolution.taskId))
-      
-            print("Evaluating the model...")
+            mlModel.load_weights(TaskService.taskSolutionFolder / f"{taskSolution.getHash()}.h5")
+            print(f"{bcolors.WARNING}[ThreadID: {get_ident()}]{bcolors.ENDC} Evaluating the model...")
             loss,acc = mlModel.evaluate(xTest,yTestCat)
-            print("Model performance: loss: ",loss," acc: ", acc)
+            print(f"{bcolors.WARNING}[ThreadID: {get_ident()}]{bcolors.ENDC} Model performance: loss: ",loss," acc: ", acc)
 
             if round(acc*100,2) != taskSolution.accuracy:
                 return False
             elif  taskSolution.accuracy < task.threshold:
                 if taskSolution.wst != 1:
                     return False
+            print(f"{bcolors.WARNING}[ThreadID: {get_ident()}]{bcolors.ENDC} Task Solution validation done successfully")
             return True
 
         except Exception as e:

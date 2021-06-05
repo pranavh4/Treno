@@ -12,7 +12,7 @@ import random
 from flask import jsonify
 import math
 from .utils import bcolors
-
+from threading import get_ident
 from werkzeug import exceptions
 from lib.block import Block
 class P2P:
@@ -103,18 +103,21 @@ class P2P:
                 payloadLimit = blockHeight - blocksFetched
             payload["limit"] = payloadLimit
             payload["blockHash"] = blockChain.mainChain[-1]
-            print("PAYLOAD")
             print(payload)
             blocks = requests.post(fetchBlocksUrl,json=payload).json()["blocks"]
             for block in blocks:
-                print(Block.fromDict(block))
-                blockChain.addBlock(Block.fromDict(block))
+                remoteBlock = Block.fromDict(block)
+                print(f"Received remote block {remoteBlock.getHash()}")
+                added = blockChain.addBlock(remoteBlock)
+                if added:
+                    print(f"{bcolors.OKGREEN}({P2P.port}) Added remote block {remoteBlock.getHash()} received from {chosenNode}{bcolors.ENDC}")
             blocksFetched+=payloadLimit
 
         print(f"({P2P.port}) Sync Node with ({chosenNode}) completed. Fetched {blocksFetched} blocks. ")
         
     @staticmethod
     def broadcastBlock(block:Block):
+        print(f"{bcolors.WARNING}[ThreadID: {get_ident()}]{bcolors.ENDC}({P2P.port}) Broadcasting Block")
         nodes = P2P.fetchNodes()
         payload={}
         payload["block"]=block.toDict()
@@ -122,12 +125,16 @@ class P2P:
         for node in nodes:
             try:
                 response = requests.post(url=f"http://{node}/receiveBlock", json = payload)
+                if response.json()["status"] == "Success":
+                    print(f"{bcolors.OKGREEN}({P2P.port})[broadcastBlock] Received response: Success from {node}{bcolors.ENDC}")
+                else:
+                    print(f"{bcolors.FAIL}({P2P.port})[broadcastBlock] Received response: Failure from {node}{bcolors.ENDC}")
             except ConnectionError:
                 print(f"Node {node} does not exist")
-            print(f"({P2P.port})[broadcastBlock] Received response: {response.text} from {node}")
     
     @staticmethod
     def broadcastTransaction(transaction:Transaction,sender):
+        print(f"{bcolors.WARNING}[ThreadID: {get_ident()}]{bcolors.ENDC}({P2P.port}) Broadcasting Transaction")
         nodes = P2P.fetchNodes()
         payload = {}
         payload["sender"] = sender
@@ -136,12 +143,16 @@ class P2P:
         for node in nodes:
             try:
                 response = requests.post(url=f"http://{node}/transactions/add",json=payload)
+                if response.json()["status"] == "Success":
+                    print(f"{bcolors.OKGREEN}({P2P.port})[broadcastTransaction] Received response: Success from {node}{bcolors.ENDC}")
+                else:
+                    print(f"{bcolors.FAIL}({P2P.port})[broadcastTransaction] Received response: Failure from {node}{bcolors.ENDC}")
             except:
                 print(f"Node {node} does not exist")
-            print(f"({P2P.port})[broadcastTransaction] Received response: {response.text} from {node}")
     
     @staticmethod
     def broadcastTask(task:Task):
+        print(f"{bcolors.WARNING}[ThreadID: {get_ident()}]{bcolors.ENDC}({P2P.port}) Broadcasting Task")
         nodes = P2P.fetchNodes()
         payload = {}
         payload["task"] = task.toDict()
@@ -149,18 +160,26 @@ class P2P:
         for node in nodes:
             try:
                 response = requests.post(url=f"http://{node}/tasks/add",json=payload)
+                if response.json()["status"] == "Success":
+                    print(f"{bcolors.OKGREEN}({P2P.port})[broadcastTask] Received response: Success from {node}{bcolors.ENDC}")
+                else:
+                    print(f"{bcolors.FAIL}({P2P.port})[broadcastTask] Received response: Failure from {node}{bcolors.ENDC}")
             except ConnectionError:
                 print(f"Node {node} does not exist")
-            print(f"({P2P.port})[broadcastTask] Received response: {response.text} from {node}")
     
     @staticmethod
     def broadcastTaskSolution(taskSolution:TaskSolution):
+        print(f"{bcolors.WARNING}[ThreadID: {get_ident()}]{bcolors.ENDC}({P2P.port}) Broadcasting Task Solution")
         nodes = P2P.fetchNodes()
         payload = {}
         payload["taskSolution"] = taskSolution.toDict()
+        payload["source"] = P2P.port
         for node in nodes:
             try:
                 response = requests.post(url=f"http://{node}/taskSolutions/add", json=payload)
+                if response.json()["status"] == "Success":
+                    print(f"{bcolors.OKGREEN}({P2P.port})[broadcastTaskSolution] Received response: Success from {node}{bcolors.ENDC}")
+                else:
+                    print(f"{bcolors.FAIL}({P2P.port})[broadcastTaskSolution] Received response: Failure from {node}{bcolors.ENDC}")
             except ConnectionError:
                 print(f"Node {node} does not exist")
-            print(f"({P2P.port})[broadcastTaskSolution] Received response: {response.text} from {node}")
