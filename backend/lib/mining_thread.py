@@ -52,16 +52,16 @@ class MiningThread(threading.Thread):
             #         self.lastBlockId = prevBlock.getHash()
             #         lastBlock = prevBlock
         if self.lastBlockId != lastBlock.getHash():
-            print("Last Block chaged. Restarting Mining Procedure")
+            print("Last Block changed. Restarting Mining Procedure")
             self.setLastBlock(lastBlock)
         # print(generationLimit - self.hitTime)
         # print(str(self.hitTime - lastBlock.timestamp) + " " + str(time.time() - lastBlock.timestamp))
         # print("hit vs genLim: " + str(self.hitTime) + " " + str(generationLimit))
-        print("Time: "  + str(time.time() - self.blockchain.GENESIS_NODE_TIMESTAMP) + f"(Time to hitTime: {self.hitTime - (int(math.floor(time.time())) - self.blockchain.GENESIS_NODE_TIMESTAMP)})")
-        if self.hitTime <= (int(math.floor(time.time())) - self.blockchain.GENESIS_NODE_TIMESTAMP):
+        print(f"({P2P.port}) Time: "  + str(time.time() - self.blockchain.GENESIS_NODE_TIMESTAMP) + f" ( Time to hitTime: {self.hitTime - (int(math.floor(time.time())) - self.blockchain.GENESIS_NODE_TIMESTAMP)})")
+        if self.hitTime == (int(math.floor(time.time())) - self.blockchain.GENESIS_NODE_TIMESTAMP):
             block = self.createBlock()
             self.blockchain.addBlock(block)
-            print(f"Added block with Hash {block.getHash()}")
+            # print(f"Added block with Hash {block.getHash()}")
             P2P.broadcastBlock(block)
         return 
 
