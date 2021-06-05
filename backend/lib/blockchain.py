@@ -30,18 +30,21 @@ class Blockchain:
 
     def createGenesisBlock(self):
         genesisKeyPath = Path(__file__).parent / "resources/genesisKey.json"
+        MinerPath = Path(__file__).parent / "resources/miner5001.json"
         with genesisKeyPath.open() as f:
             genesisKey = json.load(f)
-        
+        with MinerPath.open() as f:
+            MinerKey = json.load(f)
         transaction = Transaction(
             [TransactionInput("0",-1, "0")],
             [TransactionOutput(self.MAX_COINS, genesisKey["publicKey"])]
         )
 
         wst = TaskSolution("0","0",0.0,1,genesisKey["publicKey"],"0")
+        wstMiner = TaskSolution("0","0",0.0,1,MinerKey["publicKey"],"0")
         # print(transaction)
         block = Block(
-            [transaction, wst] ,
+            [transaction, wst, wstMiner] ,
             "0",
             genesisKey["publicKey"],
             "0000000000000000000000000000000000000000000000000000000000000000",

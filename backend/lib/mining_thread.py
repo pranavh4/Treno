@@ -11,6 +11,7 @@ from hashlib import sha256
 from .transaction import *
 from .utils import *
 import math
+from .p2p import P2P
 class MiningThread(threading.Thread):
 
     def __init__(self, blockchain: Blockchain, publicKey: str, privateKey: str):
@@ -51,17 +52,17 @@ class MiningThread(threading.Thread):
             #         self.lastBlockId = prevBlock.getHash()
             #         lastBlock = prevBlock
         if self.lastBlockId != lastBlock.getHash():
+            print("Last Block chaged. Restarting Mining Procedure")
             self.setLastBlock(lastBlock)
         # print(generationLimit - self.hitTime)
         # print(str(self.hitTime - lastBlock.timestamp) + " " + str(time.time() - lastBlock.timestamp))
         # print("hit vs genLim: " + str(self.hitTime) + " " + str(generationLimit))
-        print("Time: "  + str(time.time() - self.blockchain.GENESIS_NODE_TIMESTAMP))
+        print("Time: "  + str(time.time() - self.blockchain.GENESIS_NODE_TIMESTAMP) + f"(Time to hitTime: {self.hitTime - (int(math.floor(time.time())) - self.blockchain.GENESIS_NODE_TIMESTAMP)})")
         if self.hitTime == (int(math.floor(time.time())) - self.blockchain.GENESIS_NODE_TIMESTAMP):
-            print("added block")
             block = self.createBlock()
-            # print(block.toDict())
-            # P2P.broadcastBloock(block)
             self.blockchain.addBlock(block)
+            print(f"Added block with Hash {block.getHash()}")
+            P2P.broadcastBlock(block)
         return 
 
     @staticmethod
@@ -72,7 +73,12 @@ class MiningThread(threading.Thread):
 
     @staticmethod
     def getHitTime(block: Block, effectiveBalance: int, hitValue: int, target: int, forgingDelay: int = 30) -> int:
-        hitTime = block.timestamp + (hitValue / (effectiveBalance * target))
+        try:
+            hitTime = block.timestamp + (hitValue / (effectiveBalance * target))
+        except ZeroDivisionError:
+            hitTime = math.inf
+            print("Hit Time: Infinity. No WST Available to stake")
+            return hitTime
         print("Hit interval: " + str(hitTime - block.timestamp + forgingDelay))
         return int(math.floor(hitTime)) + forgingDelay
 

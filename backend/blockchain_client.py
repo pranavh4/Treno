@@ -11,6 +11,12 @@ from lib.wallet import Wallet
 app = Flask(__name__)
 CORS(app)
 
+
+@app.route('/generate/keys')
+def generateKeys():
+    return jsonify(Wallet.generateKey())
+
+
 @app.route('/generate/transaction', methods=['POST'])
 def generateTransaction():
     reqData = request.json
@@ -40,7 +46,7 @@ def generateTask():
     )
     task.signature = generateSignature(task.getUnsignedStr(), reqData["privateKey"])
     print(task)
-    return requests.post('http://localhost:5000/tasks/add', json=json.loads(str(task))).json()
+    return requests.post('http://localhost:5001/tasks/add', json=json.loads(str(task))).json()
 
 if __name__ == "__main__":
     app.run(host='127.0.0.1', port=8000, debug=True)

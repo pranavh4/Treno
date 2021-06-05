@@ -102,7 +102,8 @@ def receiveBlock():
     requestData = request.json
     source = requestData["sender"]
     block = Block.fromDict(requestData["block"])
-    print(f"Received block from {source}")
+    print(f"Received block with Hash {block.getHash()}from {source}")
+    blockchain.addBlock(block)
     return jsonify({"status":f"{port} received block successfully"})
 
 @app.route("/getBlockChain")

@@ -101,11 +101,11 @@ class P2P:
         print("Sync Node completed")
         
     @staticmethod
-    def broadcastBlock(block,port):
-        nodes = P2P.fetchNodes(port)
+    def broadcastBlock(block):
+        nodes = P2P.fetchNodes()
         payload={}
         payload["block"]=block.toDict()
-        payload["sender"] = port
+        payload["sender"] = P2P.port
         for node in nodes:
-            response = requests.post(url=f"{node}/receiveBlock", json = payload)
+            response = requests.post(url=f"http://{node}/receiveBlock", json = payload)
             print(response.text)
