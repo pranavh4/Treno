@@ -23,7 +23,12 @@ blockRequestLimit = 2
 @app.route("/getUtxo", methods = ['POST'])
 def getUtxo():
     sender = request.json["sender"]
-    return jsonify({"utxo": blockchain.utxoPool[sender]})
+    utxo = []
+    try:
+        utxo = blockchain.utxoPool[sender]
+    except:
+        pass
+    return jsonify({"utxo": utxo})
 
 @app.route("/transactions/add", methods = ['POST'])
 def addTransaction():

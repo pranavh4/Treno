@@ -1,4 +1,3 @@
-from sys import last_traceback
 from .task import Task, TaskSolution
 from .taskService import TaskService
 from typing import Dict

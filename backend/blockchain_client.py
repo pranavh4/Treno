@@ -1,3 +1,4 @@
+from lib.block_explorer import BlockExplorer
 from lib.utils import generateSignature
 from lib.task import Task
 import requests
@@ -46,7 +47,13 @@ def generateTask():
     )
     task.signature = generateSignature(task.getUnsignedStr(), reqData["privateKey"])
     print(task)
-    return requests.post('http://localhost:5001/tasks/add', json=json.loads(str(task))).json()
+    return requests.post('http://localhost:5000/tasks/add', json=json.loads(str(task))).json()
+
+@app.route('/get/blocks')
+def getBlocks():
+    endHeight = request.args.get("endHeight", -1)
+    numBlocks = request.args.get("numBlocks", 10)
+    return jsonify(BlockExplorer.getBlocks(endHeight, numBlocks))
 
 if __name__ == "__main__":
     app.run(host='127.0.0.1', port=8000, debug=True)
