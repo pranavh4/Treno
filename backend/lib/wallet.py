@@ -55,4 +55,4 @@ class Wallet:
             sigInput = transaction.getUnsignedStr() + transaction.txIn[i].txId + str(transaction.txIn[i].outputIndex)
             transaction.txIn[i].signature = generateSignature(sigInput, privateKey)
 
-        return json.loads(str(transaction)) 
+        return transaction

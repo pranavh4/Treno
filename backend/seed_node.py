@@ -1,6 +1,7 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 import requests
+import random
 
 app = Flask(__name__)
 CORS(app)
@@ -10,6 +11,13 @@ GENESIS_NODE_TIMESTAMP = -1
 @app.route('/getNodes', methods=['GET'])
 def getNodes():
     return jsonify({"activeNodes":nodes})
+
+@app.route('/getRandomNode', methods = ['GET'])
+def getRandomNode():
+    node = random.choice(nodes)
+    payload = {}
+    payload["node"] = node
+    return jsonify(payload)
 
 @app.route('/registerNode',methods=['POST'])
 def registerNode():

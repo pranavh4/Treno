@@ -3,6 +3,7 @@ from .blockchain import Blockchain
 from .taskService import TaskService
 from threading import Thread
 import random
+from .p2p import P2P
 class TaskThread(Thread):
     def __init__(self, blockchain: Blockchain, publicKey: str, privateKey: str):
         super().__init__()
@@ -20,5 +21,6 @@ class TaskThread(Thread):
                 TaskService.downloadTask(task)
                 taskSol = TaskService.runTask(task, self.publicKey, self.privateKey)
                 self.blockchain.addTaskSolution(taskSol)
+                P2P.broadcastTaskSolution(taskSol)
             else:
                 time.sleep(1)

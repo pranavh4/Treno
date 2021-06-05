@@ -20,7 +20,10 @@ def generateKeys():
 @app.route('/generate/transaction', methods=['POST'])
 def generateTransaction():
     reqData = request.json
-    utxo = requests.post('http://localhost:5000/getUtxo', json={"sender":reqData["sender"]}).json()["utxo"]
+    node = requests.get(url='http://localhost:8001/getRandomNode').json()["node"]
+    utxoPayload = {}
+    utxoPayload["sender"] = reqData["sender"]
+    utxo = requests.post(f'http://{node}/getUtxo', json=utxoPayload).json()["utxo"]
     print(utxo)
     transaction = Wallet.createTransaction(
         utxo,
@@ -31,11 +34,16 @@ def generateTransaction():
         reqData["privateKey"]
     )
     print(transaction)
-    retData = requests.post('http://localhost:5000/transactions/add', json={"sender":reqData["sender"], "transaction": transaction})
+    transactionPayload = {}
+    transactionPayload["sender"] = reqData["sender"]
+    transactionPayload["transaction"] = transaction.toDict()
+    transactionPayload["from"] = "client"
+    retData = requests.post(f'http://{node}/transactions/add', json=transactionPayload)
     return retData.json()
 
 @app.route('/generate/task', methods = ['POST'])
 def generateTask():
+    node = requests.get(url='http://localhost:8001/getRandomNode').json()["node"]
     reqData = request.json
     task = Task(
         reqData["resourceUrl"],
@@ -45,8 +53,11 @@ def generateTask():
         ""
     )
     task.signature = generateSignature(task.getUnsignedStr(), reqData["privateKey"])
-    print(task)
-    return requests.post('http://localhost:5001/tasks/add', json=json.loads(str(task))).json()
+    payload = {}
+    payload["task"] = task.toDict()
+    payload["from"] = "client"
+    retData = requests.post(f'http://{node}/tasks/add', json=payload) 
+    return retData.json()
 
 if __name__ == "__main__":
     app.run(host='127.0.0.1', port=8000, debug=True)
