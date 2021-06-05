@@ -246,8 +246,6 @@ if __name__ == "__main__":
     with open(args.keyFilePath) as f:
         keys = json.load(f)
     
-    print(keys)
-    
     nodes = []
     nodes = P2P.fetchNodes()
     if nodes!=[]:

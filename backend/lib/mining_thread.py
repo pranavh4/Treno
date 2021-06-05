@@ -60,8 +60,9 @@ class MiningThread(threading.Thread):
         print(f"({P2P.port}) Time: "  + str(time.time() - self.blockchain.GENESIS_NODE_TIMESTAMP) + f" ( Time to hitTime: {self.hitTime - (int(math.floor(time.time())) - self.blockchain.GENESIS_NODE_TIMESTAMP)})")
         if self.hitTime == (int(math.floor(time.time())) - self.blockchain.GENESIS_NODE_TIMESTAMP):
             block = self.createBlock()
-            self.blockchain.addBlock(block)
-            # print(f"Added block with Hash {block.getHash()}")
+            added = self.blockchain.addBlock(block)
+            if added:
+                print(f"{bcolors.OKBLUE}Added own mined block with Hash {block.getHash()}{bcolors.ENDC}")
             P2P.broadcastBlock(block)
         return 
 

@@ -103,7 +103,7 @@ class Blockchain:
                     del self.taskPool[tx.getHash()]
                 elif tx.type == "taskSolution":
                     del self.wstPool[tx.getHash()]
-        print(f"Added block {blockHash}  Successfully")
+        # print(f"Added block Successfully")
         return True
 
     def verifyBlock(self, block: Block) -> bool:

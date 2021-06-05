@@ -1,3 +1,11 @@
+from __future__ import annotations
+import typing
+
+if typing.TYPE_CHECKING:
+    from .task import TaskSolution,Task
+    from .transaction import Transaction
+    from .blockchain import Blockchain
+
 import requests
 import json
 import random
@@ -38,12 +46,12 @@ class P2P:
         return nodes
 
     @staticmethod
-    def fetchBlocks(blockChain,blockHash,limit):
+    def fetchBlocks(blockChain:Blockchain,blockHash,limit):
         blocks = []
         index = blockChain.mainChain.index(blockHash)
         for blockHash in blockChain.mainChain[index+1:index+limit+1]:
             blocks.append(blockChain.blocks[blockHash].toDict())
-        print(f"({P2P.port})Added blocks of index {index+1}, {index+1+limit}")
+        # print(f"({P2P.port})Added blocks of index {index+1}, {index+limit}")
         return blocks
     
     @staticmethod
@@ -71,7 +79,7 @@ class P2P:
             return 0
 
     @staticmethod
-    def syncNode(blockChain,limit,nodes):
+    def syncNode(blockChain: Blockchain,limit,nodes:list):
         payload = {}
         lastBlockHash = blockChain.mainChain[-1]
         payload["blockHash"] = lastBlockHash
@@ -84,6 +92,10 @@ class P2P:
         fetchBlocksUrl = f"http://{chosenNode}/fetchBlocks"
         blocksFetched = 0
 
+        if blockHeight==len(blockChain.mainChain):
+            print(f"Blocks same height as remote node {chosenNode}. Aborting Sync Node")
+            return
+        
         while blocksFetched < blockHeight:
             if limit+blocksFetched <= blockHeight:
                 payloadLimit=limit
@@ -102,7 +114,7 @@ class P2P:
         print(f"({P2P.port}) Sync Node with ({chosenNode}) completed. Fetched {blocksFetched} blocks. ")
         
     @staticmethod
-    def broadcastBlock(block):
+    def broadcastBlock(block:Block):
         nodes = P2P.fetchNodes()
         payload={}
         payload["block"]=block.toDict()
@@ -115,7 +127,7 @@ class P2P:
             print(f"({P2P.port})[broadcastBlock] Received response: {response.text} from {node}")
     
     @staticmethod
-    def broadcastTransaction(transaction,sender):
+    def broadcastTransaction(transaction:Transaction,sender):
         nodes = P2P.fetchNodes()
         payload = {}
         payload["sender"] = sender
@@ -129,7 +141,7 @@ class P2P:
             print(f"({P2P.port})[broadcastTransaction] Received response: {response.text} from {node}")
     
     @staticmethod
-    def broadcastTask(task):
+    def broadcastTask(task:Task):
         nodes = P2P.fetchNodes()
         payload = {}
         payload["task"] = task.toDict()
@@ -142,7 +154,7 @@ class P2P:
             print(f"({P2P.port})[broadcastTask] Received response: {response.text} from {node}")
     
     @staticmethod
-    def broadcastTaskSolution(taskSolution):
+    def broadcastTaskSolution(taskSolution:TaskSolution):
         nodes = P2P.fetchNodes()
         payload = {}
         payload["taskSolution"] = taskSolution.toDict()
