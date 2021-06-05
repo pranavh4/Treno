@@ -69,7 +69,9 @@ class Blockchain:
         if block.prevBlockHash != self.mainChain[-1]:
             if block.prevBlockHash != self.mainChain[-2]:
                 return False
-            if block.timestamp > self.blocks[self.mainChain[-1]].timestamp:
+            if block.timestamp > lastBlock.timestamp:
+                return False
+            elif block.timestamp == lastBlock.timestamp and block.cumulativeDifficulty < lastBlock.cumulativeDifficulty:
                 return False
             self.popLastBlock()
             lastBlockPopped = True
@@ -78,6 +80,8 @@ class Blockchain:
             if lastBlockPopped:
                 self.addBlock(lastBlock)
             return False
+        if lastBlockPopped:
+            print("Popped last block and adding received block")
         blockHash = block.getHash()
         self.mainChain.append(blockHash)
         self.blocks[blockHash] = block
@@ -130,15 +134,16 @@ class Blockchain:
             return False
         if len(block.transactions)==0:
             return True
-        if self.hasCurrencyTransactions(block) and not self.verifyCoinbase(block):
-            print("Coinbase invalid")
+
+        if not self.addTxResolveDependency(block):
+            print("Invalid Transaction")
             return False
 
         for tx in block.transactions:
-            if tx.type == "currency" and tx.signature != "Coinbase Transaction":
-                if tx.getHash() not in self.transactionPool.keys():
-                    sender = self.findByTxid(tx.txIn[0].txId).txOut[tx.txIn[0].outputIndex].receiver
-                    self.addTransaction(tx, sender)
+            if tx.type == "currency" and not self.isCoinbase(tx):
+                # if tx.getHash() not in self.transactionPool.keys():
+                #     sender = self.findByTxid(tx.txIn[0].txId).txOut[tx.txIn[0].outputIndex].receiver
+                #     self.addTransaction(tx, sender)
                 if not self.verifyTransaction(tx, True):
                     print("transaction invalid")
                     return False
@@ -147,11 +152,16 @@ class Blockchain:
                     if not self.addTask(tx):
                         print("task invalid")
                         return False
-            else:
+            elif tx.type == "taskSolution":
                 if tx.getHash() not in self.wstPool.keys():
                     if not self.addTaskSolution(tx):
                         print("task solution invalid")
                         return False
+
+        if self.hasCurrencyTransactions(block) and not self.verifyCoinbase(block):
+            print("Coinbase invalid")
+            return False
+
         return True
 
     def popLastBlock(self):
@@ -284,7 +294,7 @@ class Blockchain:
         if coinbaseTx.txIn[0].txId!="0":
             return False
         coinbaseAmt = coinbaseTx.txOut[0].amount
-        txs = [t.amount for t in block.transactions if t.type == "currency" and t.signature != "Coinbase Transaction"]
+        txIds = [t.getHash() for t in block.transactions if t.type == "currency" and not self.isCoinbase(t)]
         try:
             minerReward = sum([self.transactionPool[txId]["transactionFee"] for txId in txIds])
         except:
@@ -375,3 +385,28 @@ class Blockchain:
     def hasCurrencyTransactions(block: Block) -> bool:
         print("has")
         return len([t for t in block.transactions if t.type=="currency"]) > 0
+
+    @staticmethod
+    def isCoinbase(transaction: Transaction):
+        return transaction.txIn[0].signature == "Coinbase Transaction"
+
+    def addTxResolveDependency(self, block: Block) -> bool:
+        transactions = [t for t in block.transactions if t.type == "currency" and not self.isCoinbase(t)]
+        txIds = [t.getHash() for t in transactions]
+        for i in range(len(transactions)):
+            tx = transactions[i]
+            for txIn in tx.txIn:
+                try:
+                    index = txIds.index(txIn.txId)
+                    if index > i:
+                        transactions[i], transactions[index] = transactions[index], transactions[i]
+                        txIds[i], txIds[index] = txIds[index], txIds[i]
+                except Exception as e:
+                    print(e)
+                    pass
+        for tx in transactions:
+            if tx.getHash() not in self.transactionPool.keys():
+                sender = self.findByTxid(tx.txIn[0].txId).txOut[tx.txIn[0].outputIndex].receiver
+                if not self.addTransaction(tx, sender):
+                    return False
+        return True

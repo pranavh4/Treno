@@ -58,7 +58,7 @@ class MiningThread(threading.Thread):
         # print(str(self.hitTime - lastBlock.timestamp) + " " + str(time.time() - lastBlock.timestamp))
         # print("hit vs genLim: " + str(self.hitTime) + " " + str(generationLimit))
         print("Time: "  + str(time.time() - self.blockchain.GENESIS_NODE_TIMESTAMP) + f"(Time to hitTime: {self.hitTime - (int(math.floor(time.time())) - self.blockchain.GENESIS_NODE_TIMESTAMP)})")
-        if self.hitTime == (int(math.floor(time.time())) - self.blockchain.GENESIS_NODE_TIMESTAMP):
+        if self.hitTime <= (int(math.floor(time.time())) - self.blockchain.GENESIS_NODE_TIMESTAMP):
             block = self.createBlock()
             self.blockchain.addBlock(block)
             print(f"Added block with Hash {block.getHash()}")
@@ -103,7 +103,7 @@ class MiningThread(threading.Thread):
         prevBlock = self.blockchain.blocks[self.blockchain.mainChain[-1]]
         prevBlockHash = prevBlock.getHash()
         blockTransactions = []
-        print("TASKs")
+        print("Tasks")
         print(self.blockchain.taskPool)
         # height = self.blockchain.mainChain.index(prevBlockHash) + 1
         # index = height - 4 if height - 4 > 0 else 0
