@@ -1,3 +1,4 @@
+from lib.block_explorer import BlockExplorer
 from lib.task import TaskSolution
 from lib.taskService import TaskService
 from lib.task import Task
@@ -8,12 +9,10 @@ from lib.taskThread import TaskThread
 from lib.block import Block
 from lib.transaction import TransactionInput,Transaction, TransactionOutput
 import json
-import requests
 from flask import Flask, jsonify, request, render_template
 from flask_cors import CORS
 from argparse import ArgumentParser
 import time
-import signal
 
 app = Flask(__name__)
 CORS(app)
@@ -199,6 +198,32 @@ def testNew():
  
 # signal.signal(signal.SIGINT, handler)
 
+# Block Explorer Endpoints
+@app.route("/get/blocks")
+def getBlocks():
+    endHeight = request.args.get("endHeight", -1)
+    numBlocks = request.args.get("numBlocks", 10)
+    blocks = blockExplorer.getBlocks(endHeight, numBlocks)
+    return jsonify({"blocks": blocks})
+
+@app.route("/get/transactions")
+def getTransactions():
+    publicKey = request.args.get("publicKey", None)
+    retData = blockExplorer.getTransactions(publicKey)
+    return jsonify(retData)  
+
+@app.route("/get/wst")
+def getWST():
+    publicKey = request.args.get("publicKey", None)
+    retData = blockExplorer.getWSTTransactions(publicKey)
+    return jsonify(retData)   
+
+@app.route("/get/tasks")
+def getTasks():
+    publicKey = request.args.get("publicKey", None)
+    retData = blockExplorer.getTasks(publicKey)
+    return jsonify(retData)     
+
 if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument("keyFilePath", help="Path of json file which stores your public and private keys")
@@ -231,6 +256,8 @@ if __name__ == "__main__":
     nodes = P2P.fetchNodes()
     if nodes!=[]:
         P2P.syncNode(blockchain,blockRequestLimit,nodes)
+    
+    blockExplorer = BlockExplorer(blockchain)
     
     miningThread = MiningThread(blockchain, keys["publicKey"], keys["privateKey"])
     miningThread.setDaemon(True)

@@ -1,12 +1,8 @@
-from lib.block_explorer import BlockExplorer
 from lib.utils import generateSignature
 from lib.task import Task
 import requests
 from flask import Flask, jsonify, request, render_template, Response
 from flask_cors import CORS
-import json
-import sys
-sys.path.append('./backend')
 from lib.wallet import Wallet
 
 app = Flask(__name__)
@@ -47,7 +43,7 @@ def generateTask():
     node = requests.get(url='http://localhost:8001/getRandomNode').json()["node"]
     reqData = request.json
     task = Task(
-        reqData["resourceUrl"],
+        reqData["resourceURL"],
         reqData["threshold"],
         reqData["maxEpochs"],
         reqData["publicKey"],
@@ -63,13 +59,19 @@ def generateTask():
 
 @app.route('/<path:path>',methods=['GET', 'POST'])
 def proxy(path):
+    url = f'http://localhost:5000/{path}'
+        
     if request.method=='GET':
-        resp = requests.get(f'http://localhost:5000/{path}')
+        url += "?"
+        for param in request.args.keys():
+            url += param + "=" + request.args.get(param)
+        print(url)
+        resp = requests.get(url)
         excluded_headers = ['content-encoding', 'content-length', 'transfer-encoding', 'connection']
-        headers = [(name, value) for (name, value) in     resp.raw.headers.items() if name.lower() not in excluded_headers]
+        headers = [(name, value) for (name, value) in resp.raw.headers.items() if name.lower() not in excluded_headers]
         response = Response(resp.content, resp.status_code, headers)
     if request.method=='POST':
-        resp = requests.post(f'http://localhost:5000/{path}',json=request.get_json())
+        resp = requests.post(url,json=request.get_json())
         excluded_headers = ['content-encoding', 'content-length', 'transfer-encoding', 'connection']
         headers = [(name, value) for (name, value) in resp.raw.headers.items() if name.lower() not in excluded_headers]
         response = Response(resp.content, resp.status_code, headers)
