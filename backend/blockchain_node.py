@@ -1,3 +1,4 @@
+from lib.task import TaskSolution
 from lib.taskService import TaskService
 from lib.task import Task
 from lib.p2p import P2P
@@ -34,15 +35,12 @@ def getUtxo():
 def addTransaction():
     reqData = request.json
     sender = reqData["sender"]
-    transaction = reqData["transaction"]
-    txIn, txOut = [],[]
-    for iTx in transaction["txIn"]:
-        txIn.append(TransactionInput(iTx["txId"],iTx["outputIndex"],iTx["signature"]))
-    for oTx in transaction["txOut"]:
-        txOut.append(TransactionOutput(oTx["amount"],oTx["receiver"]))
-    transaction = Transaction(txIn,txOut)
+    transaction = Transaction.fromDict(reqData["transaction"])
+    print(f"Received transaction with sender {sender[:4]} from {reqData['from']}")
     added = blockchain.addTransaction(transaction, sender)
     if added:
+        if reqData["from"]=="client":
+            P2P.broadcastTransaction(transaction,sender)
         retData = {"status": "Success"}
     else:
         retData = {"status": "Failure"}
@@ -52,8 +50,29 @@ def addTransaction():
 @app.route("/tasks/add", methods = ['POST'])
 def addTask():
     reqData = request.json
-    task = Task.fromDict(reqData)
-    return {"status": blockchain.addTask(task)}
+    task = Task.fromDict(reqData["task"])
+    print(f"Received task from {reqData['from']}")
+    added = blockchain.addTask(task)
+    if added:
+        if reqData['from']=='client':
+            P2P.broadcastTask(task)
+        retData = {"status": "Success"}
+    else:
+        retData = {"status": "Failure"}
+    return jsonify(retData)
+
+@app.route("/taskSolutions/add", methods = ['POST'])
+def addTaskSolution():
+    reqData = request.json
+    taskSolution = TaskSolution.fromDict(reqData["taskSolution"])
+    print(f"Received task solution")
+    added = blockchain.addTaskSolution(taskSolution)
+    if added:
+        retData = {"status" : "Success"}
+    else:
+        retData = {"status" : "Failure"}
+    return jsonify(retData)
+
 
 @app.route("/block/add")
 def addBlock():

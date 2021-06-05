@@ -134,8 +134,8 @@ class Blockchain:
             print("Coinbase invalid")
             return False
 
-        for tx in block.transactions[1:]:
-            if tx.type == "currency":
+        for tx in block.transactions:
+            if tx.type == "currency" and tx.signature != "Coinbase Transaction":
                 if tx.getHash() not in self.transactionPool.keys():
                     sender = self.findByTxid(tx.txIn[0].txId).txOut[tx.txIn[0].outputIndex].receiver
                     self.addTransaction(tx, sender)
@@ -277,13 +277,14 @@ class Blockchain:
         return {"transactionFee": inputAmt - outputAmt, "valid":True}
 
     def verifyCoinbase(self, block: Block) -> bool:
+        print("verify")
         coinbaseTx = block.transactions[0]
         if len(coinbaseTx.txIn) != 1 or len(coinbaseTx.txOut) != 1:
             return False
         if coinbaseTx.txIn[0].txId!="0":
             return False
         coinbaseAmt = coinbaseTx.txOut[0].amount
-        txIds = [t.getHash() for t in block.transactions[1:] if t.type == "currency"]
+        txs = [t.amount for t in block.transactions if t.type == "currency" and t.signature != "Coinbase Transaction"]
         try:
             minerReward = sum([self.transactionPool[txId]["transactionFee"] for txId in txIds])
         except:
@@ -372,4 +373,5 @@ class Blockchain:
 
     @staticmethod
     def hasCurrencyTransactions(block: Block) -> bool:
+        print("has")
         return len([t for t in block.transactions if t.type=="currency"]) > 0

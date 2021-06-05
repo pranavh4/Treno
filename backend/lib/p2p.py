@@ -95,7 +95,6 @@ class P2P:
             for block in blocks:
                 print(Block.fromDict(block))
                 blockChain.addBlock(Block.fromDict(block))
-                print("Added")
             blocksFetched+=payloadLimit
 
         print("Sync Node completed")
@@ -108,4 +107,34 @@ class P2P:
         payload["sender"] = P2P.port
         for node in nodes:
             response = requests.post(url=f"http://{node}/receiveBlock", json = payload)
+            print(response.text)
+    
+    @staticmethod
+    def broadcastTransaction(transaction,sender):
+        nodes = P2P.fetchNodes()
+        payload = {}
+        payload["sender"] = sender
+        payload["transaction"] = transaction.toDict()
+        payload["from"] = "node"
+        for node in nodes:
+            response = requests.post(url=f"http://{node}/transactions/add",json=payload)
+            print(response.text)
+    
+    @staticmethod
+    def broadcastTask(task):
+        nodes = P2P.fetchNodes()
+        payload = {}
+        payload["task"] = task.toDict()
+        payload["from"] = "node"
+        for node in nodes:
+            response = requests.post(url=f"http://{node}/tasks/add",json=payload)
+            print(response.text)
+    
+    @staticmethod
+    def broadcastTaskSolution(taskSolution):
+        nodes = P2P.fetchNodes()
+        payload = {}
+        payload["taskSolution"] = taskSolution.toDict()
+        for node in nodes:
+            response = requests.post(url=f"http://{node}/taskSolutions/add", json=payload)
             print(response.text)
