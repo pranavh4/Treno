@@ -47,7 +47,7 @@ def generateTask():
     node = requests.get(url='http://localhost:8001/getRandomNode').json()["node"]
     reqData = request.json
     task = Task(
-        reqData["resourceUrl"],
+        reqData["resourceURL"],
         reqData["threshold"],
         reqData["maxEpochs"],
         reqData["publicKey"],
