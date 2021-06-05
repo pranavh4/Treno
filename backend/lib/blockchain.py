@@ -1,3 +1,4 @@
+from sys import last_traceback
 from .task import Task, TaskSolution
 from .taskService import TaskService
 from typing import Dict
@@ -64,8 +65,19 @@ class Blockchain:
         }]
            
     def addBlock(self, block: Block) -> bool:
+        lastBlockPopped = False
+        lastBlock = self.blocks[self.mainChain[-1]]
+        if block.prevBlockHash != self.mainChain[-1]:
+            if block.prevBlockHash != self.mainChain[-2]:
+                return False
+            if block.timestamp > self.blocks[self.mainChain[-1]].timestamp:
+                return False
+            self.popLastBlock()
+            lastBlockPopped = True
         valid = self.verifyBlock(block)
         if not valid:
+            if lastBlockPopped:
+                self.addBlock(lastBlock)
             return False
         blockHash = block.getHash()
         self.mainChain.append(blockHash)

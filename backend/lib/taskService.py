@@ -151,7 +151,7 @@ class TaskService:
                 xTrain,
                 yTrainCat,
                 batch_size=32,
-                epochs=10,
+                epochs=task.maxEpochs,
                 validation_data=(xTest, yTestCat),
                 verbose=1,
                 callbacks=[checkpointer1, checkpointer2]
