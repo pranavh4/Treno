@@ -4,7 +4,7 @@ from typing import Dict
 from .block import Block
 from pathlib import Path
 from .transaction import Transaction, TransactionInput, TransactionOutput
-from .utils import validateSignature
+from .utils import validateSignature, bcolors
 from .block_verification_utils import *
 import json
 
@@ -81,7 +81,7 @@ class Blockchain:
                 self.addBlock(lastBlock)
             return False
         if lastBlockPopped:
-            print("Popped last block and adding received block")
+            print(f"{bcolors.WARNING}Popped last block and adding received block{bcolors.ENDC}")
         blockHash = block.getHash()
         self.mainChain.append(blockHash)
         self.blocks[blockHash] = block
@@ -103,7 +103,7 @@ class Blockchain:
                     del self.taskPool[tx.getHash()]
                 elif tx.type == "taskSolution":
                     del self.wstPool[tx.getHash()]
-        print("Added block Successfully")
+        # print(f"Added block Successfully")
         return True
 
     def verifyBlock(self, block: Block) -> bool:
@@ -118,25 +118,25 @@ class Blockchain:
             b = self.blocks[blocks[0].prevBlockHash]
             blocks = [b] + blocks
         if not verifyHit(hitTime, effectiveBalance, prevBlock, block.timestamp):
-            print("Hit time Invalid")
+            print(f"{bcolors.FAIL}Hit time Invalid{bcolors.ENDC}")
             return False
         if not validateSignature(block.getUnsignedStr(), block.generatorPubKey, block.signature):
-            print("signature invalid")
+            print(f"{bcolors.FAIL}signature invalid{bcolors.ENDC}")
             return False
         if not verifyBaseTarget(blocks, block):
-            print("base target invalid")
+            print(f"{bcolors.FAIL}base target invalid{bcolors.ENDC}")
             return False
         if not verifyCumulativeDifficulty(block, prevBlock):
-            print("cumulative difficulty invalid")
+            print(f"{bcolors.FAIL}cumulative difficulty invalid{bcolors.ENDC}")
             return False
         if not verifyGenerationSignature(block, prevBlock):
-            print("generation signature invalid")
+            print(f"{bcolors.FAIL}generation signature invalid{bcolors.ENDC}")
             return False
         if len(block.transactions)==0:
             return True
 
         if not self.addTxResolveDependency(block):
-            print("Invalid Transaction")
+            print(f"{bcolors.FAIL}Invalid Transaction{bcolors.ENDC}")
             return False
 
         for tx in block.transactions:
@@ -145,21 +145,21 @@ class Blockchain:
                 #     sender = self.findByTxid(tx.txIn[0].txId).txOut[tx.txIn[0].outputIndex].receiver
                 #     self.addTransaction(tx, sender)
                 if not self.verifyTransaction(tx, True):
-                    print("transaction invalid")
+                    print(f"{bcolors.FAIL}transaction invalid{bcolors.ENDC}")
                     return False
             elif tx.type == "task":
                 if tx.getHash() not in self.taskPool.keys():
                     if not self.addTask(tx):
-                        print("task invalid")
+                        print(f"{bcolors.FAIL}task invalid{bcolors.ENDC}")
                         return False
             elif tx.type == "taskSolution":
                 if tx.getHash() not in self.wstPool.keys():
                     if not self.addTaskSolution(tx):
-                        print("task solution invalid")
+                        print(f"{bcolors.FAIL}task solution invalid{bcolors.ENDC}")
                         return False
 
         if self.hasCurrencyTransactions(block) and not self.verifyCoinbase(block):
-            print("Coinbase invalid")
+            print(f"{bcolors.FAIL}Coinbase invalid{bcolors.ENDC}")
             return False
 
         return True

@@ -1,8 +1,17 @@
+from __future__ import annotations
+import typing
+
+if typing.TYPE_CHECKING:
+    from .task import TaskSolution,Task
+    from .transaction import Transaction
+    from .blockchain import Blockchain
+
 import requests
 import json
 import random
 from flask import jsonify
 import math
+from .utils import bcolors
 
 from werkzeug import exceptions
 from lib.block import Block
@@ -33,15 +42,16 @@ class P2P:
         nodes = response.json()["activeNodes"]
         if f"127.0.0.1:{P2P.port}" in nodes:
             nodes.remove(f"127.0.0.1:{P2P.port}")
+        print(f"({P2P.port}) Fetched Nodes from Seed Node")
         return nodes
 
     @staticmethod
-    def fetchBlocks(blockChain,blockHash,limit):
+    def fetchBlocks(blockChain:Blockchain,blockHash,limit):
         blocks = []
         index = blockChain.mainChain.index(blockHash)
         for blockHash in blockChain.mainChain[index+1:index+limit+1]:
             blocks.append(blockChain.blocks[blockHash].toDict())
-        print(f"Added blocks of index {index+1}, {index+1+limit}")
+        # print(f"({P2P.port})Added blocks of index {index+1}, {index+limit}")
         return blocks
     
     @staticmethod
@@ -69,7 +79,7 @@ class P2P:
             return 0
 
     @staticmethod
-    def syncNode(blockChain,limit,nodes):
+    def syncNode(blockChain: Blockchain,limit,nodes:list):
         payload = {}
         lastBlockHash = blockChain.mainChain[-1]
         payload["blockHash"] = lastBlockHash
@@ -82,6 +92,10 @@ class P2P:
         fetchBlocksUrl = f"http://{chosenNode}/fetchBlocks"
         blocksFetched = 0
 
+        if blockHeight==len(blockChain.mainChain):
+            print(f"Blocks same height as remote node {chosenNode}. Aborting Sync Node")
+            return
+        
         while blocksFetched < blockHeight:
             if limit+blocksFetched <= blockHeight:
                 payloadLimit=limit
@@ -97,44 +111,56 @@ class P2P:
                 blockChain.addBlock(Block.fromDict(block))
             blocksFetched+=payloadLimit
 
-        print("Sync Node completed")
+        print(f"({P2P.port}) Sync Node with ({chosenNode}) completed. Fetched {blocksFetched} blocks. ")
         
     @staticmethod
-    def broadcastBlock(block):
+    def broadcastBlock(block:Block):
         nodes = P2P.fetchNodes()
         payload={}
         payload["block"]=block.toDict()
         payload["sender"] = P2P.port
         for node in nodes:
-            response = requests.post(url=f"http://{node}/receiveBlock", json = payload)
-            print(response.text)
+            try:
+                response = requests.post(url=f"http://{node}/receiveBlock", json = payload)
+            except ConnectionError:
+                print(f"Node {node} does not exist")
+            print(f"({P2P.port})[broadcastBlock] Received response: {response.text} from {node}")
     
     @staticmethod
-    def broadcastTransaction(transaction,sender):
+    def broadcastTransaction(transaction:Transaction,sender):
         nodes = P2P.fetchNodes()
         payload = {}
         payload["sender"] = sender
         payload["transaction"] = transaction.toDict()
         payload["from"] = "node"
         for node in nodes:
-            response = requests.post(url=f"http://{node}/transactions/add",json=payload)
-            print(response.text)
+            try:
+                response = requests.post(url=f"http://{node}/transactions/add",json=payload)
+            except:
+                print(f"Node {node} does not exist")
+            print(f"({P2P.port})[broadcastTransaction] Received response: {response.text} from {node}")
     
     @staticmethod
-    def broadcastTask(task):
+    def broadcastTask(task:Task):
         nodes = P2P.fetchNodes()
         payload = {}
         payload["task"] = task.toDict()
         payload["from"] = "node"
         for node in nodes:
-            response = requests.post(url=f"http://{node}/tasks/add",json=payload)
-            print(response.text)
+            try:
+                response = requests.post(url=f"http://{node}/tasks/add",json=payload)
+            except ConnectionError:
+                print(f"Node {node} does not exist")
+            print(f"({P2P.port})[broadcastTask] Received response: {response.text} from {node}")
     
     @staticmethod
-    def broadcastTaskSolution(taskSolution):
+    def broadcastTaskSolution(taskSolution:TaskSolution):
         nodes = P2P.fetchNodes()
         payload = {}
         payload["taskSolution"] = taskSolution.toDict()
         for node in nodes:
-            response = requests.post(url=f"http://{node}/taskSolutions/add", json=payload)
-            print(response.text)
+            try:
+                response = requests.post(url=f"http://{node}/taskSolutions/add", json=payload)
+            except ConnectionError:
+                print(f"Node {node} does not exist")
+            print(f"({P2P.port})[broadcastTaskSolution] Received response: {response.text} from {node}")

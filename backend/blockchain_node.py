@@ -7,12 +7,15 @@ from lib.blockchain import Blockchain
 from lib.mining_thread import MiningThread
 from lib.taskThread import TaskThread
 from lib.block import Block
+from lib.utils import bcolors
 from lib.transaction import TransactionInput,Transaction, TransactionOutput
 import json
 from flask import Flask, jsonify, request, render_template
 from flask_cors import CORS
 from argparse import ArgumentParser
 import time
+import signal
+import sys 
 
 app = Flask(__name__)
 CORS(app)
@@ -81,11 +84,11 @@ def addBlock():
 
 @app.route("/registerNode")
 def registerNode():
-    return P2P.registerNode(port)
+    return P2P.registerNode()
 
 @app.route("/deleteNode")
 def deleteNode():
-    return P2P.deleteNode(port)
+    return P2P.deleteNode()
 
 @app.route("/pauseMining")
 def pauseMining():
@@ -118,6 +121,7 @@ def fetchBlocks():
     blockHash = requestData["blockHash"]
     response = {}
     response["blocks"] = P2P.fetchBlocks(blockchain,blockHash,limit)
+    print(f"Returning {len(response['blocks'])} blocks for fetchBlocks")
     return response
 
 @app.route("/receiveBlock",methods= ["POST"])
@@ -125,8 +129,10 @@ def receiveBlock():
     requestData = request.json
     source = requestData["sender"]
     block = Block.fromDict(requestData["block"])
-    print(f"Received block with Hash {block.getHash()}from {source}")
-    blockchain.addBlock(block)
+    print(f"Received block with Hash {block.getHash()} from {source}")
+    added = blockchain.addBlock(block)
+    if added:
+        print(f"{bcolors.OKGREEN}({P2P.port}) Added remote block {block.getHash()} received from {source}{bcolors.ENDC}")
     return jsonify({"status":f"{port} received block successfully"})
 
 @app.route("/getBlockChain")
@@ -134,7 +140,7 @@ def getBlockChain():
     displayLength = 4
     blocks=[]
     for ind in range(len(blockchain.mainChain)):
-        blocks.append(blockchain.mainChain[ind][:displayLength])
+        blocks.append(blockchain.mainChain[ind][displayLength:])
     blockChainHeight = len(blockchain.mainChain)
     resp = {}
     resp["blocks"]=blocks
@@ -153,50 +159,64 @@ def test():
 
 @app.route("/printStatusLocal")
 def testNew():
-    displayLength=4
-    print(f"BlockChain Height: {len(blockchain.mainChain)}")
+    displayLength=-6
+    
     print("*"*20)
     for ind in range(len(blockchain.mainChain)):
         currentBlock = blockchain.blocks[blockchain.mainChain[ind]]
         print(f"Block Index: {ind}")
-        print(f"Block Hash: {str(blockchain.mainChain[ind])[:displayLength]}")
-        print(f"Previous Block Hash: {str(currentBlock.prevBlockHash)[:displayLength]}")
+        print(f"{bcolors.UNDERLINE}Block Hash:{bcolors.ENDC} {str(blockchain.mainChain[ind])[displayLength:]}")
+        print(f"{bcolors.UNDERLINE}Previous Block Hash:{bcolors.ENDC} {str(currentBlock.prevBlockHash)[displayLength:]}")
         if ind>0:
             timeDiff = currentBlock.timestamp - blockchain.blocks[blockchain.mainChain[ind-1]].timestamp
-            print(f"Timestamp: {currentBlock.timestamp} (+{timeDiff})")
+            print(f"Timestamp: {currentBlock.timestamp} (+{bcolors.WARNING}{timeDiff}{bcolors.ENDC})")
         else:
             print(f"Timestamp: {currentBlock.timestamp}")
         
         print(f"Base Target: {currentBlock.baseTarget}")
-        print(f"Generation Signature: {currentBlock.generationSignature[:displayLength]}")
+        print(f"Generation Signature: {currentBlock.generationSignature[displayLength:]}")
         print(f"Cumulative Difficulty: {currentBlock.cumulativeDifficulty}")
-        print(f"Generator Public Key: {currentBlock.generatorPubKey[:displayLength]}")
-        print(f"Signature: {currentBlock.signature[:displayLength]}")
+        print(f"Generator Public Key: {currentBlock.generatorPubKey[displayLength:]}")
+        print(f"Signature: {currentBlock.signature[displayLength:]}")
         if currentBlock.transactions==[]:
-            print("Transactions: Empty")
+            print(f"{bcolors.FAIL}Transactions: Empty{bcolors.ENDC}")
         else:
             print("Transactions:")
         for transaction in currentBlock.transactions:
             if transaction.type == "currency":
-                print(f"->Type: {transaction.type}")
+                print(f"{bcolors.HEADER}->Type: {bcolors.OKGREEN}{transaction.type}{bcolors.ENDC}")
                 print(f"->TxIn:")
                 for txin in transaction.txIn:
-                    print(f"---> txID: {txin.txId[:displayLength]}  outputIndex: {txin.outputIndex}  Signature: {txin.signature[:displayLength]}")
+                    print(f"---> txID: {txin.txId[displayLength:]}  outputIndex: {txin.outputIndex}  Signature: {txin.signature[displayLength:]}")
                 print(f"->TxOut:")
                 for txout in transaction.txOut:
-                    print(f"---> Amount: {txout.amount}  Receiver: {txout.receiver[:displayLength]}")
-            else:
-                print(transaction)
+                    print(f"---> Amount: {txout.amount}  Receiver: {txout.receiver[displayLength:]}")
+            elif transaction.type == "task":
+                print(f"{bcolors.HEADER}->Type: {bcolors.OKBLUE}{transaction.type}{bcolors.ENDC}")
+                print(f"Resource URL: {transaction.resourceURL}")
+                print(f"Threshold: {transaction.threshold}")
+                print(f"Max epochs: {transaction.maxEpochs}")
+                print(f"Public Key: {transaction.publicKey[displayLength:]}")
+                print(f"Signature: {transaction.signature[displayLength:]}")
+            elif transaction.type == "taskSolution":
+                print(f"{bcolors.HEADER}->Type: {bcolors.OKCYAN}{transaction.type}{bcolors.ENDC}")
+                print(f"--->Task ID: {transaction.taskId}")
+                print(f"--->Model URL: {transaction.modelURL}")
+                print(f"--->Accuracy: {transaction.accuracy}")
+                print(f"--->WST: {transaction.wst}")
+                print(f"--->Public Key: {transaction.publicKey[displayLength:]}")
+                print(f"--->Signature: {transaction.signature[displayLength:]}")
         print("*"*20)
+    print(f"{bcolors.HEADER}BlockChain Height: {len(blockchain.mainChain)}{bcolors.ENDC}")
     return jsonify({"status":"success"})
 
-# def handler(signum, frame):
-#     msg = "Ctrl-c was pressed. Deleting Registration fromm seed_node"
-#     P2P.deleteNode()
-#     print(msg, end="", flush=True)
-#     exit(1)
- 
-# signal.signal(signal.SIGINT, handler)
+def signal_handler(sig, frame):
+    print('You pressed Ctrl+C!')
+    sys.exit(0)
+
+
+
+
 
 # Block Explorer Endpoints
 @app.route("/get/blocks")
@@ -225,6 +245,9 @@ def getTasks():
     return jsonify(retData)     
 
 if __name__ == "__main__":
+
+    signal.signal(signal.SIGBREAK, signal_handler)
+    # signal.pause()
     parser = ArgumentParser()
     parser.add_argument("keyFilePath", help="Path of json file which stores your public and private keys")
     parser.add_argument("port", help="Port to start server on")
@@ -235,7 +258,7 @@ if __name__ == "__main__":
     blockchain = Blockchain()
     blockchain.createGenesisBlock()
     seedTimestamp = P2P.getGenesisNodeTimestamp()
-    print(f"Received timestamp from seed node {seedTimestamp}")
+    print(f"{bcolors.OKGREEN}Received timestamp from seed node {seedTimestamp}{bcolors.ENDC}")
     if seedTimestamp == -1:
         currTimestamp = int(time.time())
         blockchain.GENESIS_NODE_TIMESTAMP = currTimestamp
@@ -249,8 +272,6 @@ if __name__ == "__main__":
 
     with open(args.keyFilePath) as f:
         keys = json.load(f)
-    
-    print(keys)
     
     nodes = []
     nodes = P2P.fetchNodes()
@@ -267,7 +288,5 @@ if __name__ == "__main__":
     taskThread = TaskThread(blockchain, keys["publicKey"], keys["privateKey"])
     taskThread.setDaemon(True)
     taskThread.start()
-
-    
 
     app.run(host="127.0.0.1", port=port)
