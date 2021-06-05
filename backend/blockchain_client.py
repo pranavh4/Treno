@@ -1,3 +1,4 @@
+from lib.block_explorer import BlockExplorer
 from lib.utils import generateSignature
 from lib.task import Task
 import requests
@@ -58,6 +59,12 @@ def generateTask():
     payload["from"] = "client"
     retData = requests.post(f'http://{node}/tasks/add', json=payload) 
     return retData.json()
+
+@app.route('/get/blocks')
+def getBlocks():
+    endHeight = request.args.get("endHeight", -1)
+    numBlocks = request.args.get("numBlocks", 10)
+    return jsonify(BlockExplorer.getBlocks(endHeight, numBlocks))
 
 if __name__ == "__main__":
     app.run(host='127.0.0.1', port=8000, debug=True)
