@@ -227,7 +227,7 @@ def signal_handler(sig, frame):
 @app.route("/get/blocks")
 def getBlocks():
     endHeight = request.args.get("endHeight", -1)
-    numBlocks = request.args.get("numBlocks", 10)
+    numBlocks = request.args.get("numBlocks", -1)
     blocks = blockExplorer.getBlocks(endHeight, numBlocks)
     return jsonify({"blocks": blocks})
 

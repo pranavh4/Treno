@@ -13,6 +13,8 @@ import wget
 from .utils import bcolors, generateSignature, validateSignature
 import traceback
 from threading import get_ident
+import json, os
+from urllib.parse import urlparse
 
 # Task:
 #     |
@@ -47,6 +49,19 @@ class TaskService:
     solutionFolder = None
     taskFolder = None
     taskSolutionFolder = None
+    os.environ["TF_FORCE_GPU_ALLOW_GROWTH"] = "true"
+    
+    credentialsPath = Path(__file__).parent / "../../kaggle.json"
+    with credentialsPath.open() as f:
+        credentials = json.load(f)
+    print(credentials)
+    os.environ["KAGGLE_USERNAME"] = credentials["username"]
+    os.environ["KAGGLE_KEY"] = credentials["key"]
+    # print(os.environ)
+
+    from kaggle.api.kaggle_api_extended import KaggleApi
+    api = KaggleApi()
+    api.authenticate()
 
     @staticmethod
     def setFilePaths(port):
@@ -76,21 +91,27 @@ class TaskService:
         # response = requests.request("GET", task.resourceURL, headers=headers, data=payload)
         # Path(TaskService.downloadFolder +"/" + task.resourceURL.split('/')[-1]).write_bytes(response.content)
 
-        Path(TaskService.downloadFolder / "tasks").mkdir(parents=True, exist_ok=True)
+        Path(TaskService.downloadFolder / task.getHash()).mkdir(parents=True, exist_ok=True)
         Path(TaskService.taskFolder).mkdir(parents=True, exist_ok=True)
-        fileLoc = TaskService.downloadFolder / "tasks/{id}.zip".format(id = task.getHash())
+        relativeUrl = urlparse(task.resourceURL).path[1:]
+        datasetName = relativeUrl.split('/')[1]
+        fileLoc = TaskService.downloadFolder / f"{task.getHash()}/{datasetName}.zip"
+        downloadPath = TaskService.downloadFolder / f"{task.getHash()}/"
+        print("RELATIVE URL: " + relativeUrl)
+        print("DOWNLOAD PATH: " + str(downloadPath))
         if Path(fileLoc).exists():
             print(f"{bcolors.WARNING}[ThreadID: {get_ident()}]{bcolors.ENDC} Task {task.getHash()} Already Downloaded ...")
         else:
             print(f"{bcolors.WARNING}[ThreadID: {get_ident()}]{bcolors.ENDC} Downloading Task {task.getHash()} ...")
-            try:
-                file = wget.download(task.resourceURL, out=str(fileLoc))
-            except Exception as e:
-                print(f"{bcolors.WARNING}[ThreadID: {get_ident()}]{bcolors.ENDC} WGET ERROR")
-                for i in range(10000):
-                    continue
-                file = wget.download(task.resourceURL, out=str(fileLoc)) 
-            print(f"{bcolors.WARNING}[ThreadID: {get_ident()}]{bcolors.ENDC} Download completed ..., ", file)
+            # try:
+                # file = wget.download(task.resourceURL, out=str(fileLoc))
+            TaskService.api.dataset_download_files(relativeUrl, path = str(downloadPath))
+            # except Exception as e:
+            #     print(f"{bcolors.WARNING}[ThreadID: {get_ident()}]{bcolors.ENDC} WGET ERROR")
+            #     for i in range(10000):
+            #         continue
+            #     file = wget.download(task.resourceURL, out=str(fileLoc)) 
+            print(f"{bcolors.WARNING}[ThreadID: {get_ident()}]{bcolors.ENDC} Download completed ..., ", fileLoc)
         #unzip to taskFolder
         print(f"{bcolors.WARNING}[ThreadID: {get_ident()}]{bcolors.ENDC} Extracting the file ...")
         Archive(fileLoc).extractall(TaskService.taskFolder)

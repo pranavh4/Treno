@@ -8,3 +8,5 @@ taskSolution/*
 downloads/*
 currentTask/*
 mlFiles/*
+kaggle.json
+test*

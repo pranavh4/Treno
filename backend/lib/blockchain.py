@@ -150,7 +150,7 @@ class Blockchain:
                     return False
             elif tx.type == "task":
                 if tx.getHash() not in self.taskPool.keys():
-                    if not self.addTask(tx,verifyingBlock=True):
+                    if not self.addTask(tx):
                         print(f"{bcolors.FAIL} Task invalid{bcolors.ENDC}")
                         return False
             elif tx.type == "taskSolution":
@@ -212,7 +212,7 @@ class Blockchain:
 
         return True
 
-    def addTask(self, task: Task, verifyingBlock=False) -> bool:
+    def addTask(self, task: Task) -> bool:
         txId = self.findByTxid(task.getHash())
         if txId is not None:
             return False
@@ -220,19 +220,15 @@ class Blockchain:
         if not valid:
             return False
         self.taskPool[task.getHash()] = task
-        if not verifyingBlock:
-            self.untrainedTasks[task.getHash()] = task
-        print(self.taskPool)
+        self.untrainedTasks[task.getHash()] = task
         return True
 
     def addTaskSolution(self, taskSolution: TaskSolution) -> bool:
         task = self.findByTxid(taskSolution.taskId)
         if task == None or task.type != "task":
             return False
-        valid = TaskService.validateTaskSolution(task, taskSolution)
-        if not valid:
-            return False
-        print(f"{bcolors.WARNING}[ThreadID: {get_ident()}]{bcolors.ENDC} ValidateTaskSolution() done successfully")
+
+
         if taskSolution.taskId not in self.untrainedTasks.keys():
             oldTaskSol = None
             for wstId in self.wstPool.keys():
@@ -244,10 +240,18 @@ class Blockchain:
                 return False
             if oldTaskSol.accuracy > taskSolution.accuracy:
                 return False
+            valid = TaskService.validateTaskSolution(task, taskSolution)
+            if not valid:
+                return False
+            print(f"{bcolors.WARNING}[ThreadID: {get_ident()}]{bcolors.ENDC} ValidateTaskSolution() done successfully")
             del self.wstPool[oldTaskSol.getHash()]
         else:
-            print(f"{bcolors.WARNING}[ThreadID: {get_ident()}]{bcolors.ENDC} Deleted task")
+            valid = TaskService.validateTaskSolution(task, taskSolution)
+            if not valid:
+                return False
+            print(f"{bcolors.WARNING}[ThreadID: {get_ident()}]{bcolors.ENDC} ValidateTaskSolution() done successfully")
             del self.untrainedTasks[taskSolution.taskId]
+            print(f"{bcolors.WARNING}[ThreadID: {get_ident()}]{bcolors.ENDC} Deleted task from Untrained Tasks")
         self.wstPool[taskSolution.getHash()] = taskSolution
         print(f"{bcolors.WARNING}[ThreadID: {get_ident()}]{bcolors.ENDC} Task Solution Added Successfuly")
         return True
