@@ -8,7 +8,6 @@ from .transaction import Transaction, TransactionInput, TransactionOutput
 from .utils import validateSignature, bcolors
 from .block_verification_utils import *
 import json
-import atexit
 
 
 class Blockchain:
