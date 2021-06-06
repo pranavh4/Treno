@@ -115,6 +115,7 @@ class BlockExplorer():
                     if taskSolution:
                         taskSolution = taskSolution.toDict()
                     tasks.append({
+                        "taskId": tx.getHash(),
                         "task": tx.toDict(),
                         "taskSolution": taskSolution
                     })
