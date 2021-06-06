@@ -1,7 +1,7 @@
 import time
 from .blockchain import Blockchain
 from .taskService import TaskService
-from threading import Thread
+from threading import Thread, get_ident
 import random
 from .p2p import P2P
 class TaskThread(Thread):

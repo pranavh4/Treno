@@ -129,3 +129,24 @@ class BlockExplorer():
                     if tx.taskId == taskId:
                         return tx
         return None
+
+    def getBalance(self, publicKey: str) -> dict:
+        balance = 0
+        try:
+            utxos = self.blockchain.utxoPool[publicKey]
+            for utxo in utxos:
+                balance += utxo["amount"]
+        except:
+            balance = 0
+            pass
+        return {"balance": balance}
+
+    def getWSTBalance(self, publicKey: str) -> dict:
+        balance = 0
+        try:
+            height = len(self.blockchain.mainChain)
+            balance = self.blockchain.getWSTBalance(height, publicKey)
+        except:
+            balance = 0
+            pass
+        return {"wstBalance": balance}

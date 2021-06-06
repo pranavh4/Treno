@@ -12,6 +12,7 @@ from .transaction import *
 from .utils import *
 import math
 from .p2p import P2P
+from threading import get_ident
 class MiningThread(threading.Thread):
 
     def __init__(self, blockchain: Blockchain, publicKey: str, privateKey: str):
@@ -52,17 +53,17 @@ class MiningThread(threading.Thread):
             #         self.lastBlockId = prevBlock.getHash()
             #         lastBlock = prevBlock
         if self.lastBlockId != lastBlock.getHash():
-            print("Last Block changed. Restarting Mining Procedure")
+            print(f"{bcolors.WARNING}[ThreadID: {get_ident()}]{bcolors.ENDC}Last Block changed. Restarting Mining Procedure")
             self.setLastBlock(lastBlock)
         # print(generationLimit - self.hitTime)
         # print(str(self.hitTime - lastBlock.timestamp) + " " + str(time.time() - lastBlock.timestamp))
         # print("hit vs genLim: " + str(self.hitTime) + " " + str(generationLimit))
-        print(f"({P2P.port}) Time: "  + str(time.time() - self.blockchain.GENESIS_NODE_TIMESTAMP) + f" ( Time to hitTime: {self.hitTime - (int(math.floor(time.time())) - self.blockchain.GENESIS_NODE_TIMESTAMP)})")
-        if self.hitTime == (int(math.floor(time.time())) - self.blockchain.GENESIS_NODE_TIMESTAMP):
+        print(f"{bcolors.WARNING}[ThreadID: {get_ident()}]{bcolors.ENDC}({P2P.port}) Time: "  + str(time.time() - self.blockchain.GENESIS_NODE_TIMESTAMP) + f" ( Time to hitTime: {self.hitTime - (int(math.floor(time.time())) - self.blockchain.GENESIS_NODE_TIMESTAMP)})")
+        if self.hitTime <= (int(math.floor(time.time())) - self.blockchain.GENESIS_NODE_TIMESTAMP):
             block = self.createBlock()
             added = self.blockchain.addBlock(block)
             if added:
-                print(f"{bcolors.OKBLUE}Added own mined block with Hash {block.getHash()}{bcolors.ENDC}")
+                print(f"{bcolors.WARNING}[ThreadID: {get_ident()}]{bcolors.ENDC}{bcolors.OKBLUE}Added own mined block with Hash {block.getHash()}{bcolors.ENDC}")
             P2P.broadcastBlock(block)
         return 
 
@@ -88,7 +89,7 @@ class MiningThread(threading.Thread):
         index = height - 4 if height - 4 > 0 else 0
         blocks = [self.blockchain.blocks[b] for b in self.blockchain.mainChain[index:height]]
         self.nextBaseTarget = self.getNextBaseTarget(blocks)
-        print("next base target: " + str(self.nextBaseTarget))
+        print("Next base target: " + str(self.nextBaseTarget))
         self.effectiveBalance = self.blockchain.getWSTBalance(self.blockchain.mainChain.index(block.getHash()), self.publicKey)
         self.hitValue = self.getHitValue(block.generationSignature, self.publicKey)
         self.lastBlockId = block.getHash()
@@ -114,7 +115,7 @@ class MiningThread(threading.Thread):
             self.publicKey,
             self.getNextGenerationSignature(prevBlock, self.publicKey),
             self.nextBaseTarget,
-            self.getNextCumulativeDifficulty(prevBlock.cumulativeDifficulty, self.nextBaseTarget),
+            self.getNextCumulativeDifficulty(prevBlock.cumulativeDifficulty, self.nextBaseTarget, self.publicKey),
             self.hitTime
             )
         # blocks = [self.blockchain.blocks[b] for b in self.blockchain.mainChain[index:height]] + [block]
@@ -188,5 +189,5 @@ class MiningThread(threading.Thread):
             return int(tp - (tp * GAMMA*(60 - max(s, MINRATIO)))/60)
 
     @staticmethod
-    def getNextCumulativeDifficulty(prevCD, baseTarget) -> int:
-        return int(prevCD + (pow(2,64)/baseTarget))
+    def getNextCumulativeDifficulty(prevCD, baseTarget, publicKey) -> int:
+        return int(prevCD + (pow(2,64)/baseTarget) + int(publicKey,16)%100000)

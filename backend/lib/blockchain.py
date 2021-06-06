@@ -1,3 +1,4 @@
+from threading import get_ident
 from .task import Task, TaskSolution
 from .taskService import TaskService
 from typing import Dict
@@ -145,17 +146,17 @@ class Blockchain:
                 #     sender = self.findByTxid(tx.txIn[0].txId).txOut[tx.txIn[0].outputIndex].receiver
                 #     self.addTransaction(tx, sender)
                 if not self.verifyTransaction(tx, True):
-                    print(f"{bcolors.FAIL}transaction invalid{bcolors.ENDC}")
+                    print(f"{bcolors.FAIL} Transaction invalid{bcolors.ENDC}")
                     return False
             elif tx.type == "task":
                 if tx.getHash() not in self.taskPool.keys():
-                    if not self.addTask(tx):
-                        print(f"{bcolors.FAIL}task invalid{bcolors.ENDC}")
+                    if not self.addTask(tx,verifyingBlock=True):
+                        print(f"{bcolors.FAIL} Task invalid{bcolors.ENDC}")
                         return False
             elif tx.type == "taskSolution":
                 if tx.getHash() not in self.wstPool.keys():
                     if not self.addTaskSolution(tx):
-                        print(f"{bcolors.FAIL}task solution invalid{bcolors.ENDC}")
+                        print(f"{bcolors.FAIL} Task solution invalid{bcolors.ENDC}")
                         return False
 
         if self.hasCurrencyTransactions(block) and not self.verifyCoinbase(block):
@@ -211,7 +212,7 @@ class Blockchain:
 
         return True
 
-    def addTask(self, task: Task) -> bool:
+    def addTask(self, task: Task, verifyingBlock=False) -> bool:
         txId = self.findByTxid(task.getHash())
         if txId is not None:
             return False
@@ -219,7 +220,8 @@ class Blockchain:
         if not valid:
             return False
         self.taskPool[task.getHash()] = task
-        self.untrainedTasks[task.getHash()] = task
+        if not verifyingBlock:
+            self.untrainedTasks[task.getHash()] = task
         print(self.taskPool)
         return True
 
@@ -230,6 +232,7 @@ class Blockchain:
         valid = TaskService.validateTaskSolution(task, taskSolution)
         if not valid:
             return False
+        print(f"{bcolors.WARNING}[ThreadID: {get_ident()}]{bcolors.ENDC} ValidateTaskSolution() done successfully")
         if taskSolution.taskId not in self.untrainedTasks.keys():
             oldTaskSol = None
             for wstId in self.wstPool.keys():
@@ -243,9 +246,10 @@ class Blockchain:
                 return False
             del self.wstPool[oldTaskSol.getHash()]
         else:
-            print("deleted task")
+            print(f"{bcolors.WARNING}[ThreadID: {get_ident()}]{bcolors.ENDC} Deleted task")
             del self.untrainedTasks[taskSolution.taskId]
         self.wstPool[taskSolution.getHash()] = taskSolution
+        print(f"{bcolors.WARNING}[ThreadID: {get_ident()}]{bcolors.ENDC} Task Solution Added Successfuly")
         return True
 
     def verifyTransaction(self, transaction: Transaction, txIndependentlyVerified=False) -> Dict:

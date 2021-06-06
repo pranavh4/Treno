@@ -10,6 +10,8 @@ from lib.block import Block
 from lib.utils import bcolors
 from lib.transaction import TransactionInput,Transaction, TransactionOutput
 import json
+import requests
+from threading import get_ident
 from flask import Flask, jsonify, request, render_template
 from flask_cors import CORS
 from argparse import ArgumentParser
@@ -38,7 +40,7 @@ def addTransaction():
     reqData = request.json
     sender = reqData["sender"]
     transaction = Transaction.fromDict(reqData["transaction"])
-    print(f"Received transaction with sender {sender[:4]} from {reqData['from']}")
+    print(f"{bcolors.WARNING}[ThreadID: {get_ident()}]{bcolors.ENDC}Received transaction with sender {sender[:4]} from {reqData['from']}")
     added = blockchain.addTransaction(transaction, sender)
     if added:
         if reqData["from"]=="client":
@@ -67,7 +69,7 @@ def addTask():
 def addTaskSolution():
     reqData = request.json
     taskSolution = TaskSolution.fromDict(reqData["taskSolution"])
-    print(f"Received task solution")
+    print(f"Received task solution from {reqData['source']}")
     added = blockchain.addTaskSolution(taskSolution)
     if added:
         retData = {"status" : "Success"}
@@ -121,7 +123,7 @@ def fetchBlocks():
     blockHash = requestData["blockHash"]
     response = {}
     response["blocks"] = P2P.fetchBlocks(blockchain,blockHash,limit)
-    print(f"Returning {len(response['blocks'])} blocks for fetchBlocks")
+    print(f"{bcolors.WARNING}[ThreadID: {get_ident()}]{bcolors.ENDC}Returning {len(response['blocks'])} blocks for fetchBlocks")
     return response
 
 @app.route("/receiveBlock",methods= ["POST"])
@@ -133,7 +135,10 @@ def receiveBlock():
     added = blockchain.addBlock(block)
     if added:
         print(f"{bcolors.OKGREEN}({P2P.port}) Added remote block {block.getHash()} received from {source}{bcolors.ENDC}")
-    return jsonify({"status":f"{port} received block successfully"})
+        retData = {"status" : "Success"}
+    else:
+        retData = {"status": "Failure" }
+    return jsonify(retData)
 
 @app.route("/getBlockChain")
 def getBlockChain():
@@ -207,7 +212,7 @@ def testNew():
                 print(f"--->Public Key: {transaction.publicKey[displayLength:]}")
                 print(f"--->Signature: {transaction.signature[displayLength:]}")
         print("*"*20)
-    print(f"{bcolors.HEADER}BlockChain Height: {len(blockchain.mainChain)}{bcolors.ENDC}")
+    print(f"{bcolors.WARNING}[ThreadID: {get_ident()}]{bcolors.ENDC}{bcolors.HEADER}BlockChain Height: {len(blockchain.mainChain)}{bcolors.ENDC}")
     return jsonify({"status":"success"})
 
 def signal_handler(sig, frame):
@@ -242,7 +247,19 @@ def getWST():
 def getTasks():
     publicKey = request.args.get("publicKey", None)
     retData = blockExplorer.getTasks(publicKey)
-    return jsonify(retData)     
+    return jsonify(retData)
+
+@app.route("/get/balance")
+def getBalance():
+    publicKey = request.args.get("publicKey", None)
+    retData = blockExplorer.getBalance(publicKey)
+    return jsonify(retData)
+
+@app.route("/get/wstBalance")
+def getWstBalance():
+    publicKey = request.args.get("publicKey", None)
+    retData = blockExplorer.getWSTBalance(publicKey)
+    return jsonify(retData)
 
 if __name__ == "__main__":
 
@@ -253,6 +270,7 @@ if __name__ == "__main__":
     parser.add_argument("port", help="Port to start server on")
     args = parser.parse_args()
     port = args.port
+    TaskService.setFilePaths(port)
     P2P.setP2PPort(port)
     print(f"PORT: {P2P.port}")
     blockchain = Blockchain()
@@ -284,7 +302,7 @@ if __name__ == "__main__":
     miningThread.setDaemon(True)
     miningThread.start()
 
-    TaskService.setFilePaths(port)
+    
     taskThread = TaskThread(blockchain, keys["publicKey"], keys["privateKey"])
     taskThread.setDaemon(True)
     taskThread.start()
