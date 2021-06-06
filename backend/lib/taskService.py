@@ -141,10 +141,22 @@ class TaskService:
         try:
             global thresholdReached 
             thresholdReached = False
-            #read data
-            train = pd.read_csv(TaskService.taskFolder / 'data/train.csv',  header=None)   
-            test = pd.read_csv(TaskService.taskFolder / 'data/test.csv',  header=None)   
-            
+            #read data and load model. Return invalid task solution if error
+            try:
+                train = pd.read_csv(TaskService.taskFolder / 'data/train.csv',  header=None)   
+                test = pd.read_csv(TaskService.taskFolder / 'data/test.csv',  header=None)
+                mlModel = tf.keras.models.load_model(TaskService.taskFolder / 'model')
+            except:
+                taskSolution = TaskSolution(
+                    task.getHash(),
+                    "Task Files Invalid",
+                    0,
+                    0,
+                    publicKey
+                )
+                taskSolution.signature = generateSignature(taskSolution.getUnsignedStr(), privateKey)
+                return taskSolution
+    
             #spliting x and y
             yTrain = train.iloc[: , -1]
             yTest = test.iloc[: , -1] 
@@ -156,7 +168,6 @@ class TaskService:
             yTestCat = to_categorical(yTest)
 
             #load model
-            mlModel = tf.keras.models.load_model(TaskService.taskFolder / 'model')
             physical_devices = tf.config.list_physical_devices('GPU')
             print(f"{bcolors.WARNING}[ThreadID: {get_ident()}]{bcolors.ENDC} Device available : ", physical_devices)
             
@@ -237,15 +248,21 @@ class TaskService:
     @staticmethod
     def validateTaskSolution(task: Task, taskSolution: TaskSolution) -> bool:
         print(f"{bcolors.WARNING}[ThreadID: {get_ident()}]{bcolors.ENDC} Validating TaskSolution of ID {taskSolution.taskId}...")
-        TaskService.validateTask(task)
+        if not TaskService.validateTask(task):
+            return False
         TaskService.downloadTask(task)
-        TaskService.__validateTaskFiles()
+        filesValid = TaskService.__validateTaskFiles()
+        if not filesValid:
+            if taskSolution.modelURL == "Task Files Invalid":
+                return True
+            else:
+                return False
         if taskSolution.taskId != task.getHash():
             return False
         if not validateSignature(taskSolution.getUnsignedStr(), taskSolution.publicKey, taskSolution.signature):
             return False
-        TaskService.downloadTaskSolution(taskSolution)
         try:
+            TaskService.downloadTaskSolution(taskSolution)
             #read data
             test = pd.read_csv(TaskService.taskFolder / 'data/test.csv',  header=None)   
             

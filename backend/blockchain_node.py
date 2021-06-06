@@ -16,8 +16,6 @@ from flask import Flask, jsonify, request, render_template
 from flask_cors import CORS
 from argparse import ArgumentParser
 import time
-import signal
-import sys 
 
 app = Flask(__name__)
 CORS(app)
@@ -215,13 +213,6 @@ def testNew():
     print(f"{bcolors.WARNING}[ThreadID: {get_ident()}]{bcolors.ENDC}{bcolors.HEADER}BlockChain Height: {len(blockchain.mainChain)}{bcolors.ENDC}")
     return jsonify({"status":"success"})
 
-def signal_handler(sig, frame):
-    print('You pressed Ctrl+C!')
-    sys.exit(0)
-
-
-
-
 
 # Block Explorer Endpoints
 @app.route("/get/blocks")
@@ -263,8 +254,6 @@ def getWstBalance():
 
 if __name__ == "__main__":
 
-    signal.signal(signal.SIGBREAK, signal_handler)
-    # signal.pause()
     parser = ArgumentParser()
     parser.add_argument("keyFilePath", help="Path of json file which stores your public and private keys")
     parser.add_argument("port", help="Port to start server on")
