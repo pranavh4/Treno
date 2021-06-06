@@ -247,7 +247,19 @@ def getWST():
 def getTasks():
     publicKey = request.args.get("publicKey", None)
     retData = blockExplorer.getTasks(publicKey)
-    return jsonify(retData)     
+    return jsonify(retData)
+
+@app.route("/get/balance")
+def getBalance():
+    publicKey = request.args.get("publicKey", None)
+    retData = blockExplorer.getBalance(publicKey)
+    return jsonify(retData)
+
+@app.route("/get/wstBalance")
+def getWstBalance():
+    publicKey = request.args.get("publicKey", None)
+    retData = blockExplorer.getWSTBalance(publicKey)
+    return jsonify(retData)
 
 if __name__ == "__main__":
 
