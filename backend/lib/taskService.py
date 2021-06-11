@@ -29,13 +29,13 @@ from urllib.parse import urlparse
 thresholdReached = False
 
 class EarlyStoppingByValAcc(tf.keras.callbacks.Callback):
-    global thresholdReached
     def __init__(self, monitor='val_accuracy', value = 0.8):
         super(tf.keras.callbacks.Callback, self).__init__()
         self.monitor = monitor
         self.value = value
 
-    def on_epoch_end(self, epoch, logs={}): 
+    def on_epoch_end(self, epoch, logs={}):
+        global thresholdReached
         val_accuracy = logs.get(self.monitor)
         if(val_accuracy >= self.value): 
             print(f"{bcolors.WARNING}[ThreadID: {get_ident()}]{bcolors.ENDC} Threshold acc reached, stopping training ...")
@@ -54,7 +54,7 @@ class TaskService:
     credentialsPath = Path(__file__).parent / "../../kaggle.json"
     with credentialsPath.open() as f:
         credentials = json.load(f)
-    print(credentials)
+    # print(credentials)
     os.environ["KAGGLE_USERNAME"] = credentials["username"]
     os.environ["KAGGLE_KEY"] = credentials["key"]
     # print(os.environ)
@@ -211,7 +211,7 @@ class TaskService:
                 taskId = task.getHash(),
                 modelURL = taskSolutionURL,
                 accuracy = (history.history["val_accuracy"][-1] if thresholdReached else max(history.history["val_accuracy"])) * 100,
-                wst = 2 if thresholdReached else 1,
+                wst = TaskService.calculateWstAmt(task.threshold, len(train), len(train.columns)) if thresholdReached else 0,
                 publicKey = publicKey,
                 signature = ""
             )
@@ -264,7 +264,8 @@ class TaskService:
         try:
             TaskService.downloadTaskSolution(taskSolution)
             #read data
-            test = pd.read_csv(TaskService.taskFolder / 'data/test.csv',  header=None)   
+            test = pd.read_csv(TaskService.taskFolder / 'data/test.csv',  header=None)
+            train = pd.read_csv(TaskService.taskFolder / 'data/train.csv',  header=None)
             
             #spliting x and y
             yTest = test.iloc[: , -1] 
@@ -288,12 +289,26 @@ class TaskService:
             elif  taskSolution.accuracy < task.threshold:
                 if taskSolution.wst != 1:
                     return False
+            else:
+                if taskSolution.wst != TaskService.calculateWstAmt(task.threshold, len(train), len(train.columns)):
+                    return False
             print(f"{bcolors.WARNING}[ThreadID: {get_ident()}]{bcolors.ENDC} Task Solution validation done successfully")
             return True
 
         except Exception as e:
             traceback.print_exc()
             return False
+
+    @staticmethod
+    def calculateWstAmt(threshold, lenTrain, widthTrain) -> int:
+        # wstAmt = int((threshold/10)*(lenTrain*widthTrain/10000) / 4)
+        # if wstAmt < 2:
+        #     wstAmt = 2
+        # elif wstAmt > 10:
+        #     wstAmt = 10
+        # print(f"{bcolors.FAIL}[ThreadID: {get_ident()}]{bcolors.ENDC} Threshold: {threshold}\tTrain len: {lenTrain}\twidth train: {widthTrain} Amount: {wstAmt}")
+        # return wstAmt
+        return 1
 
 # if __name__ == "__main__":
 #     taskk = Task("https://transfer.sh/1LGZpPT/poker.zip",70,10,"30819f300d06092a864886f70d010101050003818d0030818902818100cb8d1b8ae3f9e568284f181f3c5fc2cf98c2e13a9f21734fa41a33bed6745e93f95c6f44e27a5f9992981c3d1bd613166f8bbf9a2245f576deb91049354635887c62eeb22969ef63a7b5fc2c53701b067dcc9425e11dac183f3328c4b64dd6493b454b09b9d24e228acd8f8795ce673b4804549a4c9de6dca9511252bb5e97530203010001","")

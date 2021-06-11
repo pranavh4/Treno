@@ -250,7 +250,11 @@ class Blockchain:
             if not valid:
                 return False
             print(f"{bcolors.WARNING}[ThreadID: {get_ident()}]{bcolors.ENDC} ValidateTaskSolution() done successfully")
-            del self.untrainedTasks[taskSolution.taskId]
+            try:
+                del self.untrainedTasks[taskSolution.taskId]
+            except:
+                print(f"{bcolors.WARNING}[ThreadID: {get_ident()}]{bcolors.ENDC} Untrained Task already deleted")
+                pass
             print(f"{bcolors.WARNING}[ThreadID: {get_ident()}]{bcolors.ENDC} Deleted task from Untrained Tasks")
         self.wstPool[taskSolution.getHash()] = taskSolution
         print(f"{bcolors.WARNING}[ThreadID: {get_ident()}]{bcolors.ENDC} Task Solution Added Successfuly")
