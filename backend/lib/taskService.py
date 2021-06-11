@@ -179,7 +179,7 @@ class TaskService:
                 filepath= TaskService.solutionFolder / '{id}.h5'.format(id=task.getHash()), 
                 verbose=1, 
                 save_best_only=True,
-                save_weights_only=True, 
+                save_weights_only=False, 
                 monitor='val_accuracy'
             )
             checkpointer2 = EarlyStoppingByValAcc(
@@ -274,10 +274,11 @@ class TaskService:
             yTestCat = to_categorical(yTest)
 
             #load model
-            mlModel = tf.keras.models.load_model(TaskService.taskFolder / 'model')
+            # mlModel = tf.keras.models.load_model(TaskService.taskFolder / 'model')
+            mlModel = tf.keras.models.load_model(TaskService.taskSolutionFolder / f"{taskSolution.getHash()}.h5")
 
             #load solution weights
-            mlModel.load_weights(TaskService.taskSolutionFolder / f"{taskSolution.getHash()}.h5")
+            # mlModel.load_weights(TaskService.taskSolutionFolder / f"{taskSolution.getHash()}.h5")
             print(f"{bcolors.WARNING}[ThreadID: {get_ident()}]{bcolors.ENDC} Evaluating the model...")
             loss,acc = mlModel.evaluate(xTest,yTestCat)
             print(f"{bcolors.WARNING}[ThreadID: {get_ident()}]{bcolors.ENDC} Model performance: loss: ",loss," acc: ", acc)

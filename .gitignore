@@ -10,3 +10,7 @@ currentTask/*
 mlFiles/*
 kaggle.json
 test*
+.ipynb_checkpoints
+*.h5
+*.csv
+*.names
