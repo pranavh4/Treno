@@ -16,7 +16,13 @@ class BlockExplorer():
             startHeight = endHeight - numBlocks
             if startHeight < 0:
                 startHeight = 0
-        blocks = [self.blockchain.blocks[i].toDict() for i in self.blockchain.mainChain[startHeight:endHeight]]
+        
+        blocks = []
+        for i in self.blockchain.mainChain[startHeight:endHeight]:
+            block = self.blockchain.blocks[i].toDict()
+            block["blockHash"] = self.blockchain.blocks[i].getHash()
+            blocks.append(block)
+        # blocks = [self.blockchain.blocks[i].toDict() for i in self.blockchain.mainChain[startHeight:endHeight]]
         return {"blocks": blocks}
 
     def getTransactions(self, publicKey: str) -> dict:

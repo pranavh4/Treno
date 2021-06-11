@@ -145,7 +145,7 @@ class TaskService:
             try:
                 train = pd.read_csv(TaskService.taskFolder / 'data/train.csv',  header=None)   
                 test = pd.read_csv(TaskService.taskFolder / 'data/test.csv',  header=None)
-                mlModel = tf.keras.models.load_model(TaskService.taskFolder / 'model')
+                mlModel = tf.keras.models.load_model(TaskService.taskFolder / 'model.h5')
             except:
                 taskSolution = TaskSolution(
                     task.getHash(),
@@ -226,7 +226,7 @@ class TaskService:
     @staticmethod
     def __validateTaskFiles() -> bool:
         try:
-            mlModel = tf.keras.models.load_model(TaskService.taskFolder / 'model')
+            mlModel = tf.keras.models.load_model(TaskService.taskFolder / 'model.h5')
             train = pd.read_csv(TaskService.taskFolder / 'data/train.csv',  header=None)   
             test = pd.read_csv(TaskService.taskFolder / 'data/test.csv',  header=None)   
             return True

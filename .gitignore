@@ -9,8 +9,7 @@ downloads/*
 currentTask/*
 mlFiles/*
 kaggle.json
-test*
+test*.py
 .ipynb_checkpoints
-*.h5
-*.csv
 *.names
+Untitled.ipynb

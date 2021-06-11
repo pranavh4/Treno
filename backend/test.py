@@ -17,5 +17,8 @@ from kaggle.api.kaggle_api_extended import KaggleApi
 api = KaggleApi()
 api.authenticate()
 
-# api.dataset_initialize("D:\\Pranav\\Coding\\Final_Year_Project\\mlFiles\\5000\\currentTask\\")
-api.dataset_create_new("D:\\Pranav\\Coding\\Final_Year_Project\\kaggle\\Poker", public= True, dir_mode='zip')
+# api.dataset_initialize("D:\\Pranav\\Coding\\Final_Year_Project\\model_test\\pokerdataset\\")
+# api.dataset_initialize("D:\\Pranav\\Coding\\Final_Year_Project\\model_test\\breastcancer\\")
+
+# api.dataset_create_new("D:\\Pranav\\Coding\\Final_Year_Project\\model_test\\pokerdataset\\", public= True, dir_mode='zip')
+api.dataset_create_new("D:\\Pranav\\Coding\\Final_Year_Project\\model_test\\breastcancer\\", public= True, dir_mode='zip')
