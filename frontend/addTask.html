@@ -1,0 +1,75 @@
+<!DOCTYPE html><html style="max-height: 72px;"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no"><title>Add Task</title><link rel="icon" type="image/png" sizes="200x200" href="assets/img/logo.png"><link rel="icon" type="image/png" sizes="200x200" href="assets/img/logo.png"><link rel="icon" type="image/png" sizes="200x200" href="assets/img/logo.png"><link rel="icon" type="image/png" sizes="200x200" href="assets/img/logo.png"><link rel="icon" type="image/png" sizes="200x200" href="assets/img/logo.png"><link rel="stylesheet" href="assets/bootstrap/css/bootstrap.min.css"><link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato:300,400,700"><link rel="stylesheet" href="assets/css/styles.min.css"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.5.2/animate.min.css"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.css"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pikaday/1.6.1/css/pikaday.min.css"></head><body><nav class="navbar navbar-dark navbar-expand-lg fixed-top bg-white portfolio-navbar gradient"><div class="container"><button class="navbar-toggler" data-bs-toggle="collapse"><span class="visually-hidden">Toggle navigation</span><span class="navbar-toggler-icon"></span></button><a href="/index.html"><img class="img-fluid" data-bss-hover-animate="swing" src="assets/img/logo.png" style="max-height: 72px;min-height: 4px;transform: rotate(0deg) scale(1.46) skew(0deg);filter: brightness(99%);" alt="Tréno"></a><div class="collapse navbar-collapse" id="navbarNav">
+    <ul class="navbar-nav ms-auto">
+        <li class="nav-item"><a class="nav-link active" href="generateKeys.html">Generate Keys</a></li>
+        <li class="nav-item"><a class="nav-link active" href="blocks.html">Block Explorer</a></li>
+        <li class="nav-item"><a class="nav-link" href="addTransaction.html">Create Transaction</a></li>
+        <li class="nav-item"><a class="nav-link" href="transactions.html">Transactions</a></li>
+        <li class="nav-item"><a class="nav-link" href="wst.html">WST</a></li>
+        <li class="nav-item"><a class="nav-link" href="tasks.html">Tasks</a></li>
+        <li class="nav-item"><a class="nav-link" href="addTask.html">Add Task</a></li>
+    </ul>
+</div></div></nav><main class="page hire-me-page"><section class="portfolio-block hire-me"><div class="container"><div class="heading"><h2>ADD TASk</h2></div><section id="successMessage" class="highlight-blue" style="display:none"><div class="container"><div class="intro"><h2 class="text-center" style="font-size: 43px;">Successfully Added Task</h2></div><div class="buttons"><a class="btn btn-primary" role="button" href="#" style="font-size: 64px;background: rgba(39,220,100,0.48);">✔<br></a></div></div></section><form id="addTaskForm" method="post" onsubmit="submitTask();return false;"><div class="alert alert-danger border-danger shadow alert-dismissible" role="alert" id="failureMessage" style="display: none"><button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button><Strong>Failed!</Strong> Couldn't add task.</div><div class="mb-3"><label class="form-label" for="Task Zip URL">Task Zip URL</label><input class="form-control" type="url" id="resourceURL"></div><div class="mb-3"><label class="form-label" for="threshold">Threshold</label><input class="form-control" type="number" id="threshold" min="50" max="95" step="0.5"></div><div class="mb-3"><label class="form-label" for="epochs">Maximum Epochs</label><input class="form-control" type="number" id="maxEpochs" min="5" max="50" step="1"></div><div class="mb-3"><label class="form-label" for="epochs">Public Key</label><textarea class="form-control item" id="publicKey"></textarea></div><div class="mb-3"><label class="form-label" for="epochs">Private Key</label><textarea class="form-control item" id="privateKey"></textarea></div><button class="btn btn-primary d-block w-100" type="submit">Submit Task</button></form></div></section></main><footer data-aos="fade-up" data-aos-duration="500" data-aos-once="true" class="page-footer" style="margin-right: 20%;margin-left: 20%;"><div class="py-5 team4">
+  <div class="container">
+    <div class="row justify-content-center mb-4">
+      <div class="col-md-7 text-center">
+        <h3 class="mb-3">Tréno Team</h3>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-lg-3 mb-4">
+        <div class="row">
+          <div class="col-md-12">
+            <img src="assets/img/team/hari.png" alt="wrapkit" class="img-fluid rounded-circle" />
+          </div>
+          <div class="col-md-12 text-center">
+            <div class="pt-2">
+              <h5 class="mt-4 font-weight-medium mb-0">Harivind Premkumar</h5>
+              <h6 class="subtitle mb-3">1MS17CS034</h6>
+              <ul class="list-inline">
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-3 mb-4">
+        <div class="row">
+          <div class="col-md-12">
+            <img src="assets/img/team/kiran.jpg" alt="wrapkit" class="img-fluid rounded-circle" />
+          </div>
+          <div class="col-md-12 text-center">
+            <div class="pt-2">
+              <h5 class="mt-4 font-weight-medium mb-0">Kiran M.H.M</h5>
+              <h6 class="subtitle mb-3">1MS17CS046</h6>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-3 mb-4">
+        <div class="row">
+          <div class="col-md-12">
+            <img src="assets/img/team/pranav.jpg" alt="wrapkit" class="img-fluid rounded-circle" />
+          </div>
+          <div class="col-md-12 text-center">
+            <div class="pt-2">
+              <h5 class="mt-4 font-weight-medium mb-0">Pranav Hegde</h5>
+              <h6 class="subtitle mb-3">1MS17CS082</h6>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-3 mb-4">
+        <div class="row">
+          <div class="col-md-12">
+            <img src="assets/img/team/rishi.jpg" alt="wrapkit" class="img-fluid rounded-circle" />
+          </div>
+          <div class="col-md-12 text-center">
+            <div class="pt-2">
+              <h5 class="mt-4 font-weight-medium mb-0">Rishi Kumar</h5>
+              <h6 class="subtitle mb-3">1MS16CS078</h6>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div></footer><script src="assets/js/jquery.min.js"></script><script src="assets/bootstrap/js/bootstrap.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/pikaday/1.6.1/pikaday.min.js"></script><script src="assets/js/script.min.js"></script></body></html>
