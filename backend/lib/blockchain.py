@@ -1,4 +1,5 @@
-from threading import get_ident
+from threading import Thread, get_ident
+import threading
 from .task import Task, TaskSolution
 from .taskService import TaskService
 from typing import Dict
@@ -8,6 +9,8 @@ from .transaction import Transaction, TransactionInput, TransactionOutput
 from .utils import validateSignature, bcolors
 from .block_verification_utils import *
 import json
+
+import transaction
 
 
 class Blockchain:
@@ -28,6 +31,8 @@ class Blockchain:
         self.taskPool = {}
         self.wstPool = {}
         self.untrainedTasks = {}
+        self.blockchainLock = threading.Lock()
+        self.untrainedTasksLock = threading.Lock()
 
     def createGenesisBlock(self):
         genesisKeyPath = Path(__file__).parent / "resources/genesisKey.json"
@@ -65,45 +70,49 @@ class Blockchain:
         }]
            
     def addBlock(self, block: Block) -> bool:
-        lastBlockPopped = False
-        lastBlock = self.blocks[self.mainChain[-1]]
-        if block.prevBlockHash != self.mainChain[-1]:
-            if block.prevBlockHash != self.mainChain[-2]:
+        with self.blockchainLock:
+            lastBlockPopped = False
+            lastBlock = self.blocks[self.mainChain[-1]]
+            if block.prevBlockHash != self.mainChain[-1]:
+                if block.prevBlockHash != self.mainChain[-2]:
+                    return False
+                if block.timestamp > lastBlock.timestamp:
+                    return False
+                elif block.timestamp == lastBlock.timestamp:
+                    if block.cumulativeDifficulty < lastBlock.cumulativeDifficulty:
+                        return False
+                    if block.cumulativeDifficulty == lastBlock.cumulativeDifficulty and block.generatorPubKey > lastBlock.generatorPubKey:
+                        return False
+                self.popLastBlock()
+                lastBlockPopped = True
+            valid = self.verifyBlock(block)
+            if not valid:
+                if lastBlockPopped:
+                    self.addBlock(lastBlock)
                 return False
-            if block.timestamp > lastBlock.timestamp:
-                return False
-            elif block.timestamp == lastBlock.timestamp and block.cumulativeDifficulty < lastBlock.cumulativeDifficulty:
-                return False
-            self.popLastBlock()
-            lastBlockPopped = True
-        valid = self.verifyBlock(block)
-        if not valid:
             if lastBlockPopped:
-                self.addBlock(lastBlock)
-            return False
-        if lastBlockPopped:
-            print(f"{bcolors.WARNING}Popped last block and adding received block{bcolors.ENDC}")
-        blockHash = block.getHash()
-        self.mainChain.append(blockHash)
-        self.blocks[blockHash] = block
+                print(f"{bcolors.WARNING}Popped last block and adding received block{bcolors.ENDC}")
+            blockHash = block.getHash()
+            self.mainChain.append(blockHash)
+            self.blocks[blockHash] = block
 
-        if len(block.transactions):
-            if self.hasCurrencyTransactions(block):
-                coinbaseTx = block.transactions[0]
-                self.addUTXO(
-                    coinbaseTx.getHash(),
-                    0,
-                    coinbaseTx.txOut[0].amount,
-                    coinbaseTx.txOut[0].receiver
-                )
+            if len(block.transactions):
+                if self.hasCurrencyTransactions(block):
+                    coinbaseTx = block.transactions[0]
+                    self.addUTXO(
+                        coinbaseTx.getHash(),
+                        0,
+                        coinbaseTx.txOut[0].amount,
+                        coinbaseTx.txOut[0].receiver
+                    )
 
-            for tx in block.transactions:
-                if tx.type == "currency" and tx.txIn[0].outputIndex!= -1:
-                    del self.transactionPool[tx.getHash()]
-                elif tx.type == "task":
-                    del self.taskPool[tx.getHash()]
-                elif tx.type == "taskSolution":
-                    del self.wstPool[tx.getHash()]
+                for tx in block.transactions:
+                    if tx.type == "currency" and tx.txIn[0].outputIndex!= -1:
+                        del self.transactionPool[tx.getHash()]
+                    elif tx.type == "task":
+                        del self.taskPool[tx.getHash()]
+                    elif tx.type == "taskSolution":
+                        del self.wstPool[tx.getHash()]
         # print(f"Added block Successfully")
         return True
 
@@ -168,8 +177,12 @@ class Blockchain:
     def popLastBlock(self):
         block = self.blocks[self.mainChain[-1]]
         for tx in block.transactions:
-            if tx.type == "currency":
-                self.transactionPool[tx.getHash()] = tx
+            if self.isCoinbase(tx):
+                self.removeUTXO(tx.getHash(), 0, tx.txOut[0].amount, tx.txOut[0].receiver)
+            elif tx.type == "currency":
+                transactionFee = self.getTransactionFee(tx)
+                if transactionFee:
+                    self.transactionPool[tx.getHash()] = {"transaction": tx, "transactionFee": transactionFee}
             elif tx.type == "task":
                 self.taskPool[tx.getHash()] = tx
             else:
@@ -228,37 +241,56 @@ class Blockchain:
         if task == None or task.type != "task":
             return False
 
-
-        if taskSolution.taskId not in self.untrainedTasks.keys():
-            oldTaskSol = None
-            for wstId in self.wstPool.keys():
-                wst = self.wstPool[wstId]
-                if wst.taskId == taskSolution.taskId:
-                    oldTaskSol = wst
-                    break
-            if oldTaskSol == None:
-                return False
-            if oldTaskSol.accuracy > taskSolution.accuracy:
-                return False
-            valid = TaskService.validateTaskSolution(task, taskSolution)
-            if not valid:
-                return False
-            print(f"{bcolors.WARNING}[ThreadID: {get_ident()}]{bcolors.ENDC} ValidateTaskSolution() done successfully")
-            del self.wstPool[oldTaskSol.getHash()]
-        else:
-            valid = TaskService.validateTaskSolution(task, taskSolution)
-            if not valid:
-                return False
-            print(f"{bcolors.WARNING}[ThreadID: {get_ident()}]{bcolors.ENDC} ValidateTaskSolution() done successfully")
-            try:
-                del self.untrainedTasks[taskSolution.taskId]
-            except:
-                print(f"{bcolors.WARNING}[ThreadID: {get_ident()}]{bcolors.ENDC} Untrained Task already deleted")
-                pass
-            print(f"{bcolors.WARNING}[ThreadID: {get_ident()}]{bcolors.ENDC} Deleted task from Untrained Tasks")
-        self.wstPool[taskSolution.getHash()] = taskSolution
-        print(f"{bcolors.WARNING}[ThreadID: {get_ident()}]{bcolors.ENDC} Task Solution Added Successfuly")
+        with self.untrainedTasksLock:
+            if taskSolution.taskId not in self.untrainedTasks.keys():
+                oldTaskSol = None
+                for wstId in self.wstPool.keys():
+                    wst = self.wstPool[wstId]
+                    if wst.taskId == taskSolution.taskId:
+                        oldTaskSol = wst
+                        break
+                if oldTaskSol == None:
+                    return False
+                if oldTaskSol.accuracy > taskSolution.accuracy:
+                    return False
+                valid = TaskService.validateTaskSolution(task, taskSolution)
+                if not valid:
+                    return False
+                print(f"{bcolors.WARNING}[ThreadID: {get_ident()}]{bcolors.ENDC} ValidateTaskSolution() done successfully")
+                try:
+                    del self.wstPool[oldTaskSol.getHash()]
+                except:
+                    print(f"{bcolors.WARNING}[ThreadID: {get_ident()}]{bcolors.ENDC} Old Task Solution already deleted")
+                    pass
+            else:
+                valid = TaskService.validateTaskSolution(task, taskSolution)
+                if not valid:
+                    return False
+                print(f"{bcolors.WARNING}[ThreadID: {get_ident()}]{bcolors.ENDC} ValidateTaskSolution() done successfully")
+                try:
+                    del self.untrainedTasks[taskSolution.taskId]
+                except:
+                    print(f"{bcolors.WARNING}[ThreadID: {get_ident()}]{bcolors.ENDC} Untrained Task already deleted")
+                    pass
+                print(f"{bcolors.WARNING}[ThreadID: {get_ident()}]{bcolors.ENDC} Deleted task from Untrained Tasks")
+            self.wstPool[taskSolution.getHash()] = taskSolution
+            print(f"{bcolors.WARNING}[ThreadID: {get_ident()}]{bcolors.ENDC} Task Solution Added Successfuly")
         return True
+
+    def getTransactionFee(self, transaction: Transaction):
+        try:
+            inputAmt = 0
+            for input in transaction.txIn:
+                inputTx = self.findByTxid(input.txId)
+                outputTx = inputTx.txOut[input.outputIndex]
+                inputAmt += outputTx.amount
+                
+            outputAmt = 0
+            for outputTx in transaction.txOut:
+                outputAmt += outputTx.amount
+            return inputAmt - outputAmt
+        except:
+            return None
 
     def verifyTransaction(self, transaction: Transaction, txIndependentlyVerified=False) -> Dict:
         inputAmt = 0
@@ -379,6 +411,17 @@ class Blockchain:
         else:
             self.utxoPool[receiver].append(utxo)
 
+    def removeUTXO(self, txId, outputIndex, amount, receiver):
+        try:
+            utxo = {
+                "txId": txId,
+                "outputIndex": outputIndex,
+                "amount": amount
+            }
+            self.utxoPool[receiver].remove(utxo)
+        except:
+            pass
+
     def getWSTBalance(self, height: int, pubKey: str) -> int:
         startIndex = height - self.WST_AGE_LIMIT
         startIndex = startIndex if startIndex > 0 else 0
@@ -400,7 +443,7 @@ class Blockchain:
 
     @staticmethod
     def isCoinbase(transaction: Transaction):
-        return transaction.txIn[0].signature == "Coinbase Transaction"
+        return transaction.type == "currency" and transaction.txIn[0].signature == "Coinbase Transaction"
 
     def addTxResolveDependency(self, block: Block) -> bool:
         transactions = [t for t in block.transactions if t.type == "currency" and not self.isCoinbase(t)]
