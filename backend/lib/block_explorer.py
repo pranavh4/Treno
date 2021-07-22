@@ -18,10 +18,13 @@ class BlockExplorer():
                 startHeight = 0
         
         blocks = []
+        height = 0
         for i in self.blockchain.mainChain[startHeight:endHeight]:
             block = self.blockchain.blocks[i].toDict()
             block["blockHash"] = self.blockchain.blocks[i].getHash()
+            block["blockHeight"] = height
             blocks.append(block)
+            height+=1
         # blocks = [self.blockchain.blocks[i].toDict() for i in self.blockchain.mainChain[startHeight:endHeight]]
         return {"blocks": blocks}
 
