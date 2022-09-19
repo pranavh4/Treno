@@ -1,9 +1,4 @@
-# Final Year Project
+# Treno
+A cryptocurreny platform based on the Proof of Solution Algorithm. ([Research Paper](https://ieeexplore.ieee.org/document/9691673))
 
-To mine with GPU
-1. Download Cuda 11 +
-SET PATH=C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.3\bin;%PATH%
-SET PATH=C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.3\extras\CUPTI\lib64;%PATH%
-SET PATH=C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.3\include;%PATH%
-SET PATH=C:\tools\cuda\bin;%PATH%
-2. download Cudann 11
+This work was undertaken as part of the Final Year Project during our undergrad at Ramaiah Institute of Technology, Bangalore
